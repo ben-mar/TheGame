@@ -34,13 +34,6 @@ class PlayerTest(unittest.TestCase):
         PlayerTestInstance.EmptyPiles()
         self.assertListEqual(self.PileUP,self.PILEUP)    
         self.assertListEqual(self.PileDOWN,self.PILEDOWN)
-    
-    def test_DrawBeginningHand(self):
-        PlayerTestInstance = TheGame.Player(self.SIZE)
-        PlayerTestInstance.DrawBeginningHand()
-        self.HAND = [54, 55, 56, 57, 58, 59]
-        self.Hand = PlayerTestInstance.Hand
-        self.assertListEqual(self.HAND,self.Hand)
 
     def test_DrawHand(self):
         PlayerTestInstance = TheGame.Player(self.SIZE)
