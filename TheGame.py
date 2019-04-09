@@ -17,14 +17,11 @@ class Player:
         self.PileUP = [1]
         self.PileDOWN = [self.SIZE]
 
-    def DrawBeginningHand(self):
-        """
-        Draws the beggining 6 cards
-        """
-        self.Hand = self.Deck[-6:]
-        self.Deck = self.Deck[:-6]
-
     def Draw(self,NumberOfCards):
+        """
+        Draws a number of cards equal to NumberOfCards from the deck (self.Deck).
+        If the deck has not enough cards in it, the function draws the whole resting deck.
+        """
         if len(self.Deck) >= NumberOfCards :
             self.Hand += self.Deck[-NumberOfCards:]
             self.Deck = self.Deck[:-NumberOfCards]
@@ -35,9 +32,7 @@ class Player:
     def setup(self):
         Player.ShuffleDeck(self)
         Player.EmptyPiles(self)
-        Player.DrawBeginningHand(self)
-    
-
+        Player.Draw(self,6)
 
 
 class Game:
@@ -212,7 +207,7 @@ def main():
 
 # redraw function at end of turn : detects when player says end of turn    
    
-main()    
+#main()    
 
 
 
