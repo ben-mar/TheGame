@@ -42,14 +42,14 @@ def main():
     mousey = 0 # used to store y coordinate of mouse event
     pygame.display.set_caption('The Game')
 
-    firstSelection = None # stores the (x, y) of the first box clicked.
+    mouseHoldClick = False
 
     DISPLAYSURF.fill(BGCOLOR)
     MainGame = TheGame.Game()
 
     while (not MainGame.P1GameOver) and (not MainGame.P2GameOver):
 
-        MainGame.Display()
+        #MainGame.Display()
         #MainGame.Player1.Hand = [1,2,3]
 
         mouseClicked = False
@@ -66,7 +66,20 @@ def main():
             elif event.type == MOUSEBUTTONUP:
                 mousex, mousey = event.pos
                 mouseClicked = True
+                mouseHoldClick = True
+            elif event.type == MOUSEBUTTONDOWN :
+                mousexdown, mouseydown = event.pos
+                mouseHoldClick = False
 
+        if OnACard(mousex,mousey,MainGame) :
+            while mouseHoldClick :
+                mousex,mousey = pygame.mouse.get_pos()
+                MoveACard(mousex,mousey,MainGame)
+                if pygame.event.peek(MOUSEBUTTONDOWN) :
+                    mouseHoldClick = False
+
+
+            
         OnACard(mousex,mousey,MainGame)
         boxRectCONCEDE = pygame.draw.rect(DISPLAYSURF, RED, (WINDOWWIDTH-100 , 0 , 100 , 100), 4)
         boxRectEOT = pygame.draw.rect(DISPLAYSURF, BLUE, (WINDOWWIDTH-100 , 360 , 100 , 100), 4)
@@ -76,6 +89,8 @@ def main():
                 MainGame.Concede()
             elif boxRectEOT.collidepoint(mousex,mousey):
                 MainGame.EndOfTurn()
+            
+            
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -211,6 +226,25 @@ def DrawCardOnBoard(ColorStr,CardReference,LeftTop=None, index=-1 ,Game = None, 
         DISPLAYSURF.blit(cardImg, (LeftTop[0], LeftTop[1]))
 
 
+def MoveACard(x,y,Game):
+    if y > WINDOWHEIGHT - heightCard:
+        if Game.ActivePlayer == 1:
+            L = len(Game.Player1.Hand)
+            x0 = (WINDOWWIDTH-L*width)//2
+            if x > x0 and x < x0 + L*width:
+                CardIndex = (x-x0)//width
+                LeftTop = [x-(widthCard//2),y-(heightCard//2)]
+                DrawCardOnBoard('Gold',Game.Player1.Hand[CardIndex],LeftTop=LeftTop, index=-1 ,Game = None, ActivePlayer = True)
+                pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
+
+        elif Game.ActivePlayer == 2:
+            L = len(Game.Player2.Hand)
+            x0 = (WINDOWWIDTH-L*width)//2
+            if x > x0 and x < x0 + L*width:
+                CardIndex = (x-x0)//width
+                LeftTop = leftTopCoordsOfCard(Game,CardIndex)
+                pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0] - 5, LeftTop[1] - 5, width + 10, heightCard + 10), 4)   
+
 
 def OnACard(x,y,Game):
     if y > WINDOWHEIGHT - heightCard:
@@ -221,6 +255,9 @@ def OnACard(x,y,Game):
                 CardIndex = (x-x0)//width
                 LeftTop = leftTopCoordsOfCard(Game,CardIndex)
                 pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
+                return True
+            else :
+                return False
 
         elif Game.ActivePlayer == 2:
             L = len(Game.Player2.Hand)
@@ -229,6 +266,11 @@ def OnACard(x,y,Game):
                 CardIndex = (x-x0)//width
                 LeftTop = leftTopCoordsOfCard(Game,CardIndex)
                 pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0] - 5, LeftTop[1] - 5, width + 10, heightCard + 10), 4)
+                return True
+            else :
+                return False
+        else :
+            return False
 
 
 def leftTopCoordsOfCard(Game,i,ActivePlayer = True):
