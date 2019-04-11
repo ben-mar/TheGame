@@ -11,10 +11,6 @@ width = int(heightCard*250/350)
 widthCard = width 
 
 
-
-
-
-
 #            R    G    B
 GRAY     = (100, 100, 100)
 NAVYBLUE = ( 60,  60, 100)
@@ -32,9 +28,11 @@ LIGHTBGCOLOR = GRAY
 BOXCOLOR = WHITE
 HIGHLIGHTCOLOR = ORANGE
 
+
 def main():
-    global FPSCLOCK, DISPLAYSURF
+    global DISPLAYSURF
     pygame.init()
+    
     FPSCLOCK = pygame.time.Clock()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 
@@ -42,47 +40,69 @@ def main():
     mousey = 0 # used to store y coordinate of mouse event
     pygame.display.set_caption('The Game')
 
-    mouseHoldClick = False
+    selected = False
+    unselected = False
+
 
     DISPLAYSURF.fill(BGCOLOR)
     MainGame = TheGame.Game()
 
     while (not MainGame.P1GameOver) and (not MainGame.P2GameOver):
 
-        #MainGame.Display()
-        #MainGame.Player1.Hand = [1,2,3]
-
         mouseClicked = False
+        unselected = False
 
         DISPLAYSURF.fill(BGCOLOR) # drawing the window
-        DrawBoard(MainGame,heightCard,widthCard,width)
+        (PileDownAP,PileUPAP,PileDownNAP,PileUPNAP) = DrawBoard(MainGame,heightCard,widthCard,width)
 
         for event in pygame.event.get(): # event handling loop
             if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-            elif event.type == MOUSEMOTION:
-                mousex, mousey = event.pos
-            elif event.type == MOUSEBUTTONUP:
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1 and OnACard(mousex,mousey,MainGame):
                 mousex, mousey = event.pos
                 mouseClicked = True
-                mouseHoldClick = True
-            elif event.type == MOUSEBUTTONDOWN :
-                mousexdown, mouseydown = event.pos
-                mouseHoldClick = False
-
-        if OnACard(mousex,mousey,MainGame) :
-            while mouseHoldClick :
-                mousex,mousey = pygame.mouse.get_pos()
-                MoveACard(mousex,mousey,MainGame)
-                if pygame.event.peek(MOUSEBUTTONDOWN) :
-                    mouseHoldClick = False
-
-
-            
+                selected = True
+                CardIndex = GetCardIndex(mousex,mousey,MainGame)
+            elif event.type == MOUSEBUTTONUP and event.button == 1 and selected:
+                selected = False
+                unselected = True
+            elif event.type == MOUSEMOTION:
+                mousex, mousey = event.pos
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1 :
+                mousex, mousey = event.pos
+                mouseClicked = True
+           
         OnACard(mousex,mousey,MainGame)
-        boxRectCONCEDE = pygame.draw.rect(DISPLAYSURF, RED, (WINDOWWIDTH-100 , 0 , 100 , 100), 4)
         boxRectEOT = pygame.draw.rect(DISPLAYSURF, BLUE, (WINDOWWIDTH-100 , 360 , 100 , 100), 4)
+        boxRectCONCEDE = pygame.draw.rect(DISPLAYSURF, RED, (WINDOWWIDTH-100 ,0 , 100,100), 4)
+
+        if selected: # we move the image selected
+            mousex, mousey = event.pos
+            MoveACard(mousex, mousey,CardIndex, MainGame)
+
+        if unselected and IsOnAPile(mousex, mousey): # we play the card on the pile 
+            mousex, mousey = event.pos
+            if MainGame.ActivePlayer == 1:
+                CardToPlay = MainGame.Player1.Hand[CardIndex]
+                if PileDownAP.collidepoint(mousex,mousey):
+                    MainGame.Play(1,CardToPlay,'DOWN')
+                elif PileUPAP.collidepoint(mousex,mousey):
+                    MainGame.Play(1,CardToPlay,'UP')
+                elif PileDownNAP.collidepoint(mousex,mousey):
+                    MainGame.Play(2,CardToPlay,'DOWN')
+                elif PileUPNAP.collidepoint(mousex,mousey):
+                    MainGame.Play(2,CardToPlay,'UP')
+            if MainGame.ActivePlayer == 2:
+                CardToPlay = MainGame.Player2.Hand[CardIndex]
+                if PileDownAP.collidepoint(mousex,mousey):
+                    MainGame.Play(2,CardToPlay,'DOWN')
+                elif PileUPAP.collidepoint(mousex,mousey):
+                    MainGame.Play(2,CardToPlay,'UP')
+                elif PileDownNAP.collidepoint(mousex,mousey):
+                    MainGame.Play(1,CardToPlay,'DOWN')
+                elif PileUPNAP.collidepoint(mousex,mousey):
+                    MainGame.Play(1,CardToPlay,'UP')
 
         if mouseClicked :
             if boxRectCONCEDE.collidepoint(mousex,mousey):
@@ -90,14 +110,97 @@ def main():
             elif boxRectEOT.collidepoint(mousex,mousey):
                 MainGame.EndOfTurn()
             
-            
-
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
         pygame.display.update()
         FPSCLOCK.tick(FPS)
+
+def IsOnAPile(x,y):
+    if x > (WINDOWWIDTH - widthCard)/2 and x < (WINDOWWIDTH + widthCard)/2 :
+        if y > heightCard and y < 5*heightCard :
+            return True
+        else :
+            return False
+    else:
+        return 0 
+
+
+def DrawCardOnBoard(ColorStr,CardReference,LeftTop=None, index=-1 ,Game = None, ActivePlayer = True):
+    cardImg = pygame.image.load('Cards/'+ColorStr+'Cards/Card_'+str(CardReference)+'.png')
+    cardImg = pygame.transform.scale(cardImg, (widthCard, heightCard))
+    if index>=0:
+        Card = DISPLAYSURF.blit(cardImg, leftTopCoordsOfCard(Game,index,ActivePlayer=ActivePlayer))
+        return Card
+    elif index<0:
+        Card = DISPLAYSURF.blit(cardImg, (LeftTop[0], LeftTop[1]))
+        return Card
+
+def MoveACard(x,y,CardIndex,Game):
+    LeftTop = [x-(widthCard//2),y-(heightCard//2)]
+    if Game.ActivePlayer == 1:
+        DrawCardOnBoard('Gold',Game.Player1.Hand[CardIndex],LeftTop=LeftTop, index=-1 ,Game = None, ActivePlayer = True)
+        pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
+        
+    elif Game.ActivePlayer == 2:
+        DrawCardOnBoard('Silver',Game.Player2.Hand[CardIndex],LeftTop=LeftTop, index=-1 ,Game = None, ActivePlayer = True)
+        pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
+          
+
+def OnACard(x,y,Game):
+    CardIndex = GetCardIndex(x,y,Game)
+    if CardIndex >= 0:
+        if Game.ActivePlayer == 1:
+            LeftTop = leftTopCoordsOfCard(Game,CardIndex)
+            pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
+            return True
+
+        elif Game.ActivePlayer == 2:
+            LeftTop = leftTopCoordsOfCard(Game,CardIndex)
+            pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0] - 5, LeftTop[1] - 5, width + 10, heightCard + 10), 4)
+            return True
+    else :
+        return False
+
+def GetCardIndex(x,y,Game):
+    if y > WINDOWHEIGHT - heightCard:
+        if Game.ActivePlayer == 1:
+            L = len(Game.Player1.Hand)
+            x0 = (WINDOWWIDTH-L*width)//2
+            if x > x0 and x < x0 + L*width:
+                CardIndex = (x-x0)//width
+                return CardIndex
+            else :
+                return -1
+                
+        elif Game.ActivePlayer == 2:
+            L = len(Game.Player2.Hand)
+            x0 = (WINDOWWIDTH-L*width)//2
+            if x > x0 and x < x0 + L*width:
+                CardIndex = (x-x0)//width
+                return CardIndex
+            else :
+                return -1 
+    else :
+        return -1
+
+def leftTopCoordsOfCard(Game,i,ActivePlayer = True):
+    # Convert board coordinates to pixel coordinates
+    if Game.ActivePlayer == 1:
+        if ActivePlayer :   
+            x0 = (WINDOWWIDTH-len(Game.Player1.Hand)*width)//2 
+            return (x0+i*width,5*heightCard-10)
+        elif not ActivePlayer :
+            x0 = (WINDOWWIDTH-len(Game.Player2.Hand)*width)//2
+            return (x0+i*width,0)
+    elif Game.ActivePlayer == 2:
+            if ActivePlayer :   
+                x0 = (WINDOWWIDTH-len(Game.Player2.Hand)*width)//2 
+                return (x0+i*width,5*heightCard-10)
+            elif not ActivePlayer :
+                x0 = (WINDOWWIDTH-len(Game.Player1.Hand)*width)//2
+                return (x0+i*width,0)
 
 def DrawBoard(Game,heightCard,widthCard,width):
     i = 0
@@ -114,22 +217,22 @@ def DrawBoard(Game,heightCard,widthCard,width):
 
         # Draws The Pile DOWN of ActivePlayer    
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),4*heightCard-10]
-        DrawCardOnBoard(ColorStr,Game.Player1.PileDOWN[-1:][0],LeftTop)
+        PileDownAP = DrawCardOnBoard(ColorStr,Game.Player1.PileDOWN[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # Draws The Pile Up of ActivePlayer   
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),3*heightCard-10]
-        DrawCardOnBoard(ColorStr,Game.Player1.PileUP[-1:][0],LeftTop)
+        PileUPAP = DrawCardOnBoard(ColorStr,Game.Player1.PileUP[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # Draws The Pile UP of NonActivePlayer    
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),2*heightCard-10]
-        DrawCardOnBoard('Silver',Game.Player2.PileUP[-1:][0],LeftTop)
+        PileUPNAP = DrawCardOnBoard('Silver',Game.Player2.PileUP[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # Draws The Pile DOWN of NonActivePlayer   
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),heightCard-10]
-        DrawCardOnBoard('Silver',Game.Player2.PileDOWN[-1:][0],LeftTop)
+        PileDownNAP = DrawCardOnBoard('Silver',Game.Player2.PileDOWN[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # DRAWS THE PILES SYMBOLES !
@@ -172,22 +275,22 @@ def DrawBoard(Game,heightCard,widthCard,width):
 
         # Draws The Pile DOWN of ActivePlayer    
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),4*heightCard-10]
-        DrawCardOnBoard(ColorStr,Game.Player2.PileDOWN[-1:][0],LeftTop)
+        PileDownAP = DrawCardOnBoard(ColorStr,Game.Player2.PileDOWN[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # Draws The Pile UP of ActivePlayer   
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),3*heightCard-10]
-        DrawCardOnBoard(ColorStr,Game.Player2.PileUP[-1:][0],LeftTop)
+        PileUPAP = DrawCardOnBoard(ColorStr,Game.Player2.PileUP[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # Draws The Pile UP of NonActivePlayer    
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),2*heightCard-10]
-        DrawCardOnBoard('Gold',Game.Player1.PileUP[-1:][0],LeftTop)
+        PileUPNAP = DrawCardOnBoard('Gold',Game.Player1.PileUP[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # Draws The Pile DOWN of NonActivePlayer   
         LeftTop = [int((WINDOWWIDTH-widthCard)/2),heightCard-10]
-        DrawCardOnBoard('Gold',Game.Player1.PileDOWN[-1:][0],LeftTop)
+        PileDownNAP = DrawCardOnBoard('Gold',Game.Player1.PileDOWN[-1:][0],LeftTop)
         pygame.draw.rect(DISPLAYSURF, WHITE, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
 
         # DRAWS THE PILES SYMBOLES !
@@ -216,81 +319,7 @@ def DrawBoard(Game,heightCard,widthCard,width):
         LeftTop = [int((WINDOWWIDTH + 3*widthCard)/2),int(1.5*heightCard-10)]
         DrawCardOnBoard('Gold','THEGAME',LeftTop)
         pygame.draw.rect(DISPLAYSURF, GRAY, (LeftTop[0] , LeftTop[1] , width , heightCard ), 4)
-
-def DrawCardOnBoard(ColorStr,CardReference,LeftTop=None, index=-1 ,Game = None, ActivePlayer = True):
-    cardImg = pygame.image.load('Cards/'+ColorStr+'Cards/Card_'+str(CardReference)+'.png')
-    cardImg = pygame.transform.scale(cardImg, (widthCard, heightCard))
-    if index>=0:
-        DISPLAYSURF.blit(cardImg, leftTopCoordsOfCard(Game,index,ActivePlayer=ActivePlayer))
-    elif index<0:
-        DISPLAYSURF.blit(cardImg, (LeftTop[0], LeftTop[1]))
-
-
-def MoveACard(x,y,Game):
-    if y > WINDOWHEIGHT - heightCard:
-        if Game.ActivePlayer == 1:
-            L = len(Game.Player1.Hand)
-            x0 = (WINDOWWIDTH-L*width)//2
-            if x > x0 and x < x0 + L*width:
-                CardIndex = (x-x0)//width
-                LeftTop = [x-(widthCard//2),y-(heightCard//2)]
-                DrawCardOnBoard('Gold',Game.Player1.Hand[CardIndex],LeftTop=LeftTop, index=-1 ,Game = None, ActivePlayer = True)
-                pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
-
-        elif Game.ActivePlayer == 2:
-            L = len(Game.Player2.Hand)
-            x0 = (WINDOWWIDTH-L*width)//2
-            if x > x0 and x < x0 + L*width:
-                CardIndex = (x-x0)//width
-                LeftTop = leftTopCoordsOfCard(Game,CardIndex)
-                pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0] - 5, LeftTop[1] - 5, width + 10, heightCard + 10), 4)   
-
-
-def OnACard(x,y,Game):
-    if y > WINDOWHEIGHT - heightCard:
-        if Game.ActivePlayer == 1:
-            L = len(Game.Player1.Hand)
-            x0 = (WINDOWWIDTH-L*width)//2
-            if x > x0 and x < x0 + L*width:
-                CardIndex = (x-x0)//width
-                LeftTop = leftTopCoordsOfCard(Game,CardIndex)
-                pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , width, heightCard ), 4)
-                return True
-            else :
-                return False
-
-        elif Game.ActivePlayer == 2:
-            L = len(Game.Player2.Hand)
-            x0 = (WINDOWWIDTH-L*width)//2
-            if x > x0 and x < x0 + L*width:
-                CardIndex = (x-x0)//width
-                LeftTop = leftTopCoordsOfCard(Game,CardIndex)
-                pygame.draw.rect(DISPLAYSURF, HIGHLIGHTCOLOR, (LeftTop[0] - 5, LeftTop[1] - 5, width + 10, heightCard + 10), 4)
-                return True
-            else :
-                return False
-        else :
-            return False
-
-
-def leftTopCoordsOfCard(Game,i,ActivePlayer = True):
-    # Convert board coordinates to pixel coordinates
-    if Game.ActivePlayer == 1:
-        if ActivePlayer :   
-            x0 = (WINDOWWIDTH-len(Game.Player1.Hand)*width)//2 
-            return (x0+i*width,5*heightCard-10)
-        elif not ActivePlayer :
-            x0 = (WINDOWWIDTH-len(Game.Player2.Hand)*width)//2
-            return (x0+i*width,0)
-    elif Game.ActivePlayer == 2:
-            if ActivePlayer :   
-                x0 = (WINDOWWIDTH-len(Game.Player2.Hand)*width)//2 
-                return (x0+i*width,5*heightCard-10)
-            elif not ActivePlayer :
-                x0 = (WINDOWWIDTH-len(Game.Player1.Hand)*width)//2
-                return (x0+i*width,0)
-
-
     
+    return PileDownAP,PileUPAP,PileDownNAP,PileUPNAP
 if __name__ == '__main__':
     main()
