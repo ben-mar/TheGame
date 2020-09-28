@@ -1,6 +1,6 @@
 import numpy as np
 import unittest
-import TheGame
+import TheGameCopy
 
 
 class CardTest(unittest.TestCase):
@@ -10,11 +10,149 @@ class CardTest(unittest.TestCase):
         self.TestNumberList = [1,50,32,41,10]
         self.color = 'silver'
         
-    def TestCard(self
+    def test_Card(self
                  ) -> None:
 
         for numberTest in self.TestNumberList:
-            cardtest = TheGarme.Card(numberTest,self.color)
+            cardtest = TheGameCopy.Card(numberTest,self.color)
+            self.assertTrue(cardtest.color == 'silver')
+            self.assertTrue(cardtest.number == numberTest)
+
+    def test_equality(self) -> None:
+        self.number1 = 15
+        self.color1 = 'silver'
+        self.card1 = TheGameCopy.Card(self.number1,self.color1)
+
+        self.number2 = 53
+        self.color2 = 'silver'
+        self.card2 = TheGameCopy.Card(self.number2,self.color2)        
+
+        self.number3 = 15
+        self.color3 = 'gold'
+        self.card3 = TheGameCopy.Card(self.number3,self.color3)   
+
+        self.number4 = 15
+        self.color4 = 'silver'
+        self.card4 = TheGameCopy.Card(self.number4,self.color4)
+
+        self.assertNotEqual(self.card1,self.card2)
+        self.assertNotEqual(self.card1,self.card3)
+        self.assertNotEqual(self.card2,self.card3)
+        self.assertEqual(self.card1,self.card4)
+
+
+
+class DeckTest(unittest.TestCase):
+
+    def setUp(self
+                ) -> None:
+        self.color = 'silver'
+        self.size = 60
+        self.deck = TheGameCopy.Deck(size = self.size, color = self.color)
+
+    def test_Equal(self):
+        DeckTestInstance = TheGameCopy.Deck(size = self.size, color = self.color)
+        self.assertEqual(self.deck, DeckTestInstance)
+
+    def test_Shuffle(self):
+        DeckTestInstance = TheGameCopy.Deck(size = self.size, color = self.color)
+        DeckTestInstance.ShuffleDeck()
+        self.assertNotEqual(self.deck, DeckTestInstance)
+
+class HandTest(unittest.TestCase):
+
+    def setUp(self):
+        self.listOfNumbers = [1,50,32,41,10]
+        self.color = 'silver'     
+        self.ListOfCards = []  
+        for number in self.listOfNumbers:
+            self.ListOfCards.append(TheGameCopy.Card(number,self.color))
+         
+    
+    def test_listofcards(self):
+        TestHand = TheGameCopy.Hand(self.ListOfCards)
+        print(TestHand)
+        for card in TestHand.hand:
+            print(card)
+
+
+class PlayerCopyTest(unittest.TestCase):
+
+    def setUp(self):
+        self.color = 'silver'
+        self.size = 60
+        self.decklist = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+                    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+                    32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+                    46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
+        self.PILEUP = [1]
+        self.PILEDOWN = [60]
+        
+    
+    def test_Init(self):
+        PlayerTestInstance = TheGameCopy.Player(self.size)
+        self.Deck = PlayerTestInstance.Deck
+
+        self.assertListEqual(self.Deck,self.DECKLIST)
+
+    def test_Shuffle(self):
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
+        self.Deck = PlayerTestInstance.Deck
+        PlayerTestInstance.ShuffleDeck()
+        self.assertTrue(self.Deck != self.DECKLIST)
+        self.assertSetEqual(set(self.Deck),set(self.DECKLIST))
+    
+    def test_EmptyPiles(self):
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
+        self.PileUP = PlayerTestInstance.PileUP
+        self.PileDOWN = PlayerTestInstance.PileDOWN
+        PlayerTestInstance.EmptyPiles()
+        self.assertListEqual(self.PileUP,self.PILEUP)    
+        self.assertListEqual(self.PileDOWN,self.PILEDOWN)
+
+    def test_DrawHand(self):
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
+        PlayerTestInstance.Hand = [2,3,4]
+        self.HANDFINAL = [2,3,4,57,58,59]
+        PlayerTestInstance.Draw(3)
+        self.assertListEqual(self.HANDFINAL,PlayerTestInstance.Hand)
+
+        PlayerTestInstance = TheGameCopy.Player(5)
+        PlayerTestInstance.Hand = [20,30,40]
+        self.HANDFINAL = [20,30,40,2,3,4]
+        PlayerTestInstance.Draw(3)
+        self.assertListEqual(self.HANDFINAL,PlayerTestInstance.Hand)
+        self.assertListEqual(PlayerTestInstance.Deck,[])
+        PlayerTestInstance.Draw(2)
+        self.assertListEqual(self.HANDFINAL,PlayerTestInstance.Hand)
+        self.assertListEqual(PlayerTestInstance.Deck,[])
+
+        PlayerTestInstance = TheGameCopy.Player(5)
+        PlayerTestInstance.Hand = [20,30,40]
+        self.HAND = [20,30,40,3,4]
+        self.HANDFINAL = [20,30,40,3,4,2]
+        PlayerTestInstance.Draw(2)
+        self.assertListEqual(self.HAND,PlayerTestInstance.Hand)
+        self.assertListEqual(PlayerTestInstance.Deck,[2])
+        PlayerTestInstance.Draw(2)
+        self.assertListEqual(self.HANDFINAL,PlayerTestInstance.Hand)
+        self.assertListEqual(PlayerTestInstance.Deck,[])
+
+    def test_setup(self):
+        """
+        This test doesn't test again the DrawBeginningHand function
+        """
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
+        self.Deck = PlayerTestInstance.Deck
+        self.PileUP = PlayerTestInstance.PileUP
+        self.PileDOWN = PlayerTestInstance.PileDOWN
+
+        PlayerTestInstance.setup()
+        self.assertTrue(self.Deck != self.DECKLIST)
+        self.assertSetEqual(set(self.Deck),set(self.DECKLIST))
+        self.assertListEqual(self.PileUP,self.PILEUP)    
+        self.assertListEqual(self.PileDOWN,self.PILEDOWN)
+
 
 
 
@@ -31,20 +169,20 @@ class PlayerTest(unittest.TestCase):
         
     
     def test_Init(self):
-        PlayerTestInstance = TheGame.Player(self.SIZE)
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
         self.Deck = PlayerTestInstance.Deck
 
         self.assertListEqual(self.Deck,self.DECKLIST)
 
     def test_Shuffle(self):
-        PlayerTestInstance = TheGame.Player(self.SIZE)
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
         self.Deck = PlayerTestInstance.Deck
         PlayerTestInstance.ShuffleDeck()
         self.assertTrue(self.Deck != self.DECKLIST)
         self.assertSetEqual(set(self.Deck),set(self.DECKLIST))
     
     def test_EmptyPiles(self):
-        PlayerTestInstance = TheGame.Player(self.SIZE)
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
         self.PileUP = PlayerTestInstance.PileUP
         self.PileDOWN = PlayerTestInstance.PileDOWN
         PlayerTestInstance.EmptyPiles()
@@ -52,13 +190,13 @@ class PlayerTest(unittest.TestCase):
         self.assertListEqual(self.PileDOWN,self.PILEDOWN)
 
     def test_DrawHand(self):
-        PlayerTestInstance = TheGame.Player(self.SIZE)
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
         PlayerTestInstance.Hand = [2,3,4]
         self.HANDFINAL = [2,3,4,57,58,59]
         PlayerTestInstance.Draw(3)
         self.assertListEqual(self.HANDFINAL,PlayerTestInstance.Hand)
 
-        PlayerTestInstance = TheGame.Player(5)
+        PlayerTestInstance = TheGameCopy.Player(5)
         PlayerTestInstance.Hand = [20,30,40]
         self.HANDFINAL = [20,30,40,2,3,4]
         PlayerTestInstance.Draw(3)
@@ -68,7 +206,7 @@ class PlayerTest(unittest.TestCase):
         self.assertListEqual(self.HANDFINAL,PlayerTestInstance.Hand)
         self.assertListEqual(PlayerTestInstance.Deck,[])
 
-        PlayerTestInstance = TheGame.Player(5)
+        PlayerTestInstance = TheGameCopy.Player(5)
         PlayerTestInstance.Hand = [20,30,40]
         self.HAND = [20,30,40,3,4]
         self.HANDFINAL = [20,30,40,3,4,2]
@@ -83,7 +221,7 @@ class PlayerTest(unittest.TestCase):
         """
         This test doesn't test again the DrawBeginningHand function
         """
-        PlayerTestInstance = TheGame.Player(self.SIZE)
+        PlayerTestInstance = TheGameCopy.Player(self.SIZE)
         self.Deck = PlayerTestInstance.Deck
         self.PileUP = PlayerTestInstance.PileUP
         self.PileDOWN = PlayerTestInstance.PileDOWN
@@ -100,7 +238,7 @@ class GameTest(unittest.TestCase):
 
     def test_checkAction(self):
 
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
 
         PileIndex = ["False",1,2]
 
@@ -134,7 +272,7 @@ class GameTest(unittest.TestCase):
     
     def test_put(self):
         PileIndex = ["False",1,2]
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
 
         self.Game.ActivePlayer = 2
 
@@ -171,7 +309,7 @@ class GameTest(unittest.TestCase):
 
     def test_play(self):
         PileIndex = ["False",1,2]
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
 
         self.Game.ActivePlayer = 2
 
@@ -195,7 +333,7 @@ class GameTest(unittest.TestCase):
         self.assertListEqual(self.Game.Player1.PileDOWN,[60,51,47,57])
 
     def test_Concede(self):
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
         self.assertFalse(self.Game.P1GameOver)
         self.assertFalse(self.Game.P2GameOver)
 
@@ -209,7 +347,7 @@ class GameTest(unittest.TestCase):
         self.assertTrue(self.Game.P2GameOver)
 
     def test_ChangeActivePlayer(self):
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
 
         self.Game.ActivePlayer = 1
         self.Game.ChangeActivePlayer()
@@ -218,7 +356,7 @@ class GameTest(unittest.TestCase):
         self.assertEqual(self.Game.ActivePlayer,1)
     
     def test_DrawEndOfTurn(self):
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
         self.Game.Player1.Deck = [5,23,15,58,46]
         self.Game.Player2.Deck = [5,32,9,51,53,48]
         self.Game.Player1.Hand = [2,3]
@@ -240,7 +378,7 @@ class GameTest(unittest.TestCase):
         self.assertListEqual(self.Game.Player2.Deck,[5,32,9])
 
     def test_EndOfTurn(self):
-        self.Game = TheGame.Game()
+        self.Game = TheGameCopy.Game()
 
         self.Game.Player1.Deck = [5,23,15,58,46]
         self.Game.Player2.Deck = [5,32,9,51,53,48]

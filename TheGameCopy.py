@@ -3,6 +3,156 @@ import os
 import pygame, sys
 #from pygame.locals import *
 
+
+class Card:
+
+    def __init__(self,
+                 number : int,
+                 color: str
+                 ) -> None: 
+
+        self.number = number
+        self.color = color
+
+    def __eq__(self,
+               other
+               ) -> bool:
+
+        """Overrides the default implementation"""
+
+        if isinstance(other, Card):
+            SameNumber = (self.number == other.number)
+            SameColor = (self.color == other.color)
+            return (SameColor & SameNumber)
+
+        return False
+
+    def __repr__(self):
+        return "Card : "+str(self.number)+", color: "+self.color
+
+    def __str__(self):
+        return "Card : "+str(self.number)+", color: "+self.color
+
+class Hand:
+
+    def __init__(self,
+                 ListOfCards: list
+                 ) -> None:
+
+        if isinstance(ListOfCards[0], Card):
+            self.color = ListOfCards[0].color
+        for card in ListOfCards:
+            if not isinstance(card, Card):
+                Exception("The list is not only composed of Cards !")
+            
+            if card.color != self.color:
+                Exception("The list is not composed of Cards of the same color !")
+        
+        self.hand = ListOfCards
+
+    def __repr__(self):
+        repre = ''
+        for card in self.hand:
+            repre = repre +  "Card : "+str(card.number)+", color: "+card.color
+        return repre
+
+    def __str__(self):
+        list_ = []
+        for card in self.hand:
+            list_.append(card.number)
+        return "hand : "+str(list_)+", color: "+self.color
+
+class Deck:
+
+    def __init__(self,
+                 size: int,
+                 color: str
+                 ) -> None:
+
+        self.color = color
+        self.size = size
+        self.deck = [Card(i,self.color) for i in range(2,self.size)]
+
+    def ShuffleDeck(self):
+        np.random.shuffle(self.deck)
+
+    def __eq__(self,
+               other
+               ) -> bool:
+
+        """Overrides the default implementation"""
+
+        if isinstance(other, Deck):
+            loop = 0
+            SameCardNumber = True
+            SameCardColor = True
+            for card in self.deck:
+                #print(loop)
+                SameCardNumber = (card.number == other.deck[loop].number) & SameCardNumber
+                SameCardColor = (card.color == other.deck[loop].color) & SameCardColor
+                loop += 1
+            print(SameCardColor,SameCardNumber)
+            return (SameCardColor & SameCardNumber)
+            
+        return False
+
+    def __repr__(self):
+        repre = ''
+        for card in self.deck:
+            repre = repre +  "Card : "+str(card.number)+", color: "+card.color
+        return repre
+
+    def __str__(self):
+        list_ = []
+        for card in self.deck:
+            list_.append(card.number)
+        return "deck : "+str(list_)+", color: "+self.color
+
+class PlayerCopy:
+
+    def __init__(self,
+                 size: int,
+                 color: str
+                 ) -> None :
+
+        self.color = color
+        self.size = size
+        self.deckInstance = Deck(size,self.color)
+        self.deck = self.deckInstance.deck
+        print(self.deck)
+        self.deckInstance.ShuffleDeck()
+        print(self.deck)        
+        self.PileUP = [Card(number = 1, color = self.color)]
+        self.PileDOWN = [Card(number = self.size, color = self.color)]
+        self.Hand = []
+        self.PlayedOnOpponnentPiles = False
+        
+
+    
+    def EmptyPiles(self):
+        self.PileUP = [Card(number = 1, color = self.color)]
+        self.PileDOWN = [Card(number = self.size, color = self.color)]
+
+    def Draw(self,
+             NumberOfCards: int
+             ) -> None:
+
+        """
+        Draws a number of cards equal to NumberOfCards from the deck (self.Deck).
+        If the deck has not enough cards in it, the function draws the whole resting deck.
+        """
+        if len(self.deckInstance.deck) >= NumberOfCards :
+            self.Hand += self.Deck[-NumberOfCards:]
+            self.Deck = self.Deck[:-NumberOfCards]
+        else :
+            self.Hand += self.Deck
+            self.Deck = []
+
+    def setup(self):
+        Player.ShuffleDeck(self)
+        Player.EmptyPiles(self)
+        Player.Draw(self,6)
+
 class Player:
 
     def __init__(self,SIZE):
@@ -20,7 +170,10 @@ class Player:
         self.PileUP = [1]
         self.PileDOWN = [self.SIZE]
 
-    def Draw(self,NumberOfCards):
+    def Draw(self,
+             NumberOfCards: int
+             ) -> None:
+
         """
         Draws a number of cards equal to NumberOfCards from the deck (self.Deck).
         If the deck has not enough cards in it, the function draws the whole resting deck.
