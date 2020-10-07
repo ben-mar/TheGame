@@ -1,17 +1,15 @@
-import pygame
-from pygame.locals import *
 import sys
 import socket
 import select
 import random
-import time
+import pygame
+from pygame.locals import *
 import TheGame
-import numpy as np
 
 
 class GameClient:
-	def __init__(self, addr="127.0.0.1", serverport=9009):
 
+	def __init__(self, addr="127.0.0.1", serverport=9009):
 		self.clientport = random.randrange(8000, 8999)
 		self.conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		# Bind to localhost - set to external ip to connect from other computers
@@ -26,6 +24,32 @@ class GameClient:
 		self.game = TheGame.TheGamePlay()
 		pygame.display.set_caption('The Game')
 
+	def Encode(self,
+			   ListOfCards: list
+			   ) -> str:
+		# Encodes the messages
+		if ListOfCards == []:
+			return ''
+		else:
+			str_encoded = ''
+			for card in ListOfCards:
+				str_encoded += str(card.number)+'$'+card.color+';'
+			str_encoded = str_encoded.rstrip(';')
+			return(str_encoded)
+
+	def Decode (self,
+				str_encoded: str
+				) -> list:
+		# Decodes the messages
+		ListOfCards = [] 
+		if str_encoded =='':
+			return ListOfCards
+		else:
+			spliting = str_encoded.split(';')
+			for encoded_card in spliting:
+				number,color = encoded_card.split('$') 
+				ListOfCards.append(TheGame.Card(int(number),color))
+			return ListOfCards
 
 	def run(self):
 		running = (not self.game.P1GameOver) and (not self.game.P2GameOver)
@@ -76,25 +100,25 @@ class GameClient:
 					)
 				for f in readable:
 					if f is self.conn:
-						msg, _ = f.recvfrom(1024)
+						msg, _ = f.recvfrom(65536) # find the best size here
 						msg= msg.decode()
 						if len(msg) >= 3:
 							cmd = msg[0:3]
 							msg = msg[3:]
 						if cmd == 'SU1': # setup new player hand and deck
 							Hand1, Hand2, Deck1, Deck2, ActivePlayer = msg.split('|')
-							self.game.Player1.Hand = list(map(int,Hand1.split(';')))
-							self.game.Player1.Deck = list(map(int,Deck1.split(';')))
-							self.game.Player2.Hand = list(map(int,Hand2.split(';')))
-							self.game.Player2.Deck = list(map(int,Deck2.split(';')))
+							self.game.Player1.hand = self.Decode(Hand1)
+							self.game.Player1.deck = self.Decode(Deck1)
+							self.game.Player2.hand = self.Decode(Hand2)
+							self.game.Player2.deck = self.Decode(Deck2)
 							self.game.ActivePlayer = int(ActivePlayer)
 							NotSU1 = False
 						if cmd == 'SU2': # setup new player piles
 							PileUP1,PileDN1 , PileUP2,PileDN2 = msg.split('|')
-							self.game.Player1.PileUP = list(map(int,PileUP1.split(';')))
-							self.game.Player1.PileDOWN = list(map(int,PileDN1.split(';')))
-							self.game.Player2.PileUP = list(map(int,PileUP2.split(';')))
-							self.game.Player2.PileDOWN = list(map(int,PileDN2.split(';')))												
+							self.game.Player1.PileUP = self.Decode(PileUP1)
+							self.game.Player1.PileDOWN = self.Decode(PileDN1)
+							self.game.Player2.PileUP = self.Decode(PileUP2)
+							self.game.Player2.PileDOWN = self.Decode(PileDN2)											
 							NotSU2 = False
 			# the game
 			while running:
@@ -105,25 +129,56 @@ class GameClient:
 					select.select(self.read_list, self.write_list, [], 0)
 				)
 				for f in readable:
+
 					if f is self.conn:
-						msg, _ = f.recvfrom(1024)
+
+						msg, _ = f.recvfrom(65536)
 						msg= msg.decode()
+
 						if len(msg) >= 3:
+
 							cmd = msg[0:3]
-							msg = msg[3:]						
+							msg = msg[3:]					
+
 						if cmd == "PLC":  # PLay a Card
-							PileIndex,Number,PileName = msg.split(";")
-							self.game.Play(int(PileIndex),int(Number),PileName)
+
+							PileIndex,CardStr,PileName = msg.split(";")
+							Card = self.Decode(CardStr)[0]
+							self.game.Play(int(PileIndex),Card,PileName) #TODO
+
+							# message to check piles, hand and deck
+							LenghtHands = len(self.game.Player1.hand)*len(self.game.Player2.hand)
+							LenghtDecks = len(self.game.Player1.deck)*len(self.game.Player2.deck)
+							if LenghtDecks*LenghtHands > 0 :
+
+								msg = "CK1"+self.Encode(self.game.Player1.hand)
+								msg += "|" +self.Encode(self.game.Player2.hand)
+								msg += "|" +self.Encode(self.game.Player1.deck)
+								msg += "|" +self.Encode(self.game.Player2.deck)
+
+								msg2 = "CK2"+self.Encode(self.game.Player1.PileUP)
+								msg2 += "|"+self.Encode(self.game.Player1.PileDOWN)
+								msg2 += "|"+self.Encode(self.game.Player2.PileUP)
+								msg2 += "|"+self.Encode(self.game.Player2.PileDOWN)
+
+								self.conn.sendto(msg.encode(), (self.addr, self.serverport))
+								self.conn.sendto(msg2.encode(), (self.addr, self.serverport))
+
 						elif cmd == "EOT": # End Of Turn
+
 							self.game.EndOfTurn()
+
 						elif cmd == "CAP": # Change ActivePlayer
+
 							self.game.ChangeActivePlayer()
+
 						elif cmd == 'UPD' : 
+
 							Hand1, Hand2, Deck1, Deck2 = msg.split('|')
-							self.game.Player1.Hand = list(map(int,Hand1.split(';')))
-							self.game.Player1.Deck = list(map(int,Deck1.split(';')))
-							self.game.Player2.Hand = list(map(int,Hand2.split(';')))
-							self.game.Player2.Deck = list(map(int,Deck2.split(';')))
+							self.game.Player1.hand = self.Decode(Hand1)
+							self.game.Player1.deck = self.Decode(Deck1)
+							self.game.Player2.hand = self.Decode(Hand2)
+							self.game.Player2.deck = self.Decode(Deck2)
 
 
 				mouseClicked = False
@@ -165,17 +220,17 @@ class GameClient:
 				# shows the number of cards of the players
 				if APDeck.collidepoint(mousex,mousey) :
 					if PlayerSelected == 1 :
-						label = self.game.myfont.render(str(len(self.game.Player1.Deck)), 1, (255,255,0))
+						label = self.game.myfont.render(str(len(self.game.Player1.deck)), 1, (255,255,0))
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH-4.4*self.game.WIDTHCARD)/2),int(4.5*self.game.HEIGHTCARD)))
 					elif PlayerSelected == 2 :
-						label = self.game.myfont.render(str(len(self.game.Player2.Deck)), 1, (169,169,169))
+						label = self.game.myfont.render(str(len(self.game.Player2.deck)), 1, (169,169,169))
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH-4.4*self.game.WIDTHCARD)/2),int(4.5*self.game.HEIGHTCARD)))
 				if NAPDeck.collidepoint(mousex,mousey) :
 					if PlayerSelected == 1 :
-						label = self.game.myfont.render(str(len(self.game.Player2.Deck)), 1, (169,169,169))
+						label = self.game.myfont.render(str(len(self.game.Player2.deck)), 1, (169,169,169))
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH+3.4*self.game.WIDTHCARD)/2),int(2.5*self.game.HEIGHTCARD)))
 					elif PlayerSelected == 2 :
-						label = self.game.myfont.render(str(len(self.game.Player1.Deck)), 1, (255,255,0))
+						label = self.game.myfont.render(str(len(self.game.Player1.deck)), 1, (255,255,0))
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH+3.4*self.game.WIDTHCARD)/2),int(2.5*self.game.HEIGHTCARD)))
 
 				# we move the image selected
@@ -187,25 +242,25 @@ class GameClient:
 				if unselected and self.game.IsOnAPile(mousex, mousey): 
 					mousex, mousey = event.pos
 					if self.game.ActivePlayer == 1 :# and self.game.ActivePlayer == PlayerSelected:
-						CardToPlay = self.game.Player1.Hand[CardIndex]
+						CardToPlay = self.game.Player1.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+str(CardToPlay)+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";DOWN").encode(),  (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+str(CardToPlay)+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+str(CardToPlay)+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";DOWN").encode(), (self.addr, self.serverport))
 						elif PileUPNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+str(CardToPlay)+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
 					if self.game.ActivePlayer == 2 :# and self.game.ActivePlayer == PlayerSelected:
-						CardToPlay = self.game.Player2.Hand[CardIndex]
+						CardToPlay = self.game.Player2.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+str(CardToPlay)+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";DOWN").encode(), (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+str(CardToPlay)+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+str(CardToPlay)+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";DOWN").encode(), (self.addr, self.serverport))
 						elif PileUPNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+str(CardToPlay)+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
 
 				# EOT or concede block
 				if mouseClicked :
@@ -273,8 +328,6 @@ class GameClient:
 											self.game.DrawCardOnBoard('Gold',str(number),PlayerSelected,LeftTop=[int(x0+(j-1)*WidthSeenCard+self.game.WIDTHCARD),y0])
 										j+=1
 
-
-
 								if PlayerSelected == 2:
 									for number in self.game.Player2.PileDOWN :
 										pass
@@ -322,24 +375,6 @@ class GameClient:
 					elif boxRectEOT.collidepoint(mousex,mousey):
 						self.conn.sendto("EOT".encode(), (self.addr, self.serverport))
 
-				# message to check piles, hand and deck
-				LenghtHands = len(self.game.Player1.Hand)*len(self.game.Player2.Hand)
-				LenghtDecks = len(self.game.Player1.Deck)*len(self.game.Player2.Deck)
-				if LenghtDecks*LenghtHands > 0 :
-
-					msg = "CK1"+";".join(map(str,self.game.Player1.Hand))
-					msg += "|" + ";".join(map(str,self.game.Player2.Hand))
-					msg += "|" + ";".join(map(str,self.game.Player1.Deck))
-					msg += "|" + ";".join(map(str,self.game.Player2.Deck))
-
-
-					msg2 = "CK2"+";".join(map(str,self.game.Player1.PileUP))
-					msg2 += "|"+";".join(map(str,self.game.Player1.PileDOWN))
-					msg2 += "|"+";".join(map(str,self.game.Player2.PileUP))
-					msg2 += "|"+";".join(map(str,self.game.Player2.PileDOWN))
-
-					self.conn.sendto(msg.encode(), (self.addr, self.serverport))
-					self.conn.sendto(msg2.encode(), (self.addr, self.serverport))
 
 				pygame.display.update()
 				self.game.clock.tick(self.game.FPS)  

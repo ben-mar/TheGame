@@ -1,49 +1,170 @@
-import numpy as np
 import os
-import pygame, sys
+import numpy as np
+import pygame
 #from pygame.locals import *
+
+
+def CreateListOfCards(ListOfNumbers: list,
+                      color: str
+                      ) -> list:
+
+    return [Card(i,color) for i in ListOfNumbers]
+
+class Card:
+
+    def __init__(self,
+                 number : int,
+                 color: str
+                 ) -> None: 
+        if not isinstance(number, int):
+            raise("The number for the initialisation is not an int")
+        if not isinstance(color, str):
+            raise("The color for the initialisation is not a str")
+        self.number = number
+        self.color = color 
+
+    def __eq__(self,
+               other
+               ) -> bool:
+
+        """Overrides the default implementation"""
+
+        if isinstance(other, Card):
+            SameNumber = (self.number == other.number)
+            SameColor = (self.color == other.color)
+            return (SameColor & SameNumber)
+
+        return False
+
+    def __repr__(self):
+        return "Card : "+str(self.number)+", color: "+self.color
+
+    def __str__(self):
+        return "Card : "+str(self.number)+", color: "+self.color
+
+class Hand:
+
+    def __init__(self,
+                 ListOfNumbers: list,
+                 color: str
+                 ) -> None:
+
+        if len(ListOfNumbers) != 0:
+            for number in ListOfNumbers:
+                if not isinstance(number, int):
+                    Exception("The list is not only composed of integers !")
+
+        self.color = color        
+        self.hand = [Card(i,self.color) for i in ListOfNumbers]
+
+    def __repr__(self):
+        repre = ''
+        for card in self.hand:
+            repre = repre +  "Card : "+str(card.number)+", color: "+card.color
+        return repre
+
+    def __str__(self):
+        list_ = []
+        for card in self.hand:
+            list_.append(card.number)
+        return "hand : "+str(list_)+", color: "+self.color
+
+class Deck:
+
+    def __init__(self,
+                 size: int,
+                 color: str
+                 ) -> None:
+
+        self.color = color
+        self.size = size
+        self.deck = [Card(i,self.color) for i in range(2,self.size)]
+
+    def ShuffleDeck(self):
+        np.random.shuffle(self.deck)
+
+    def __eq__(self,
+               other
+               ) -> bool:
+
+        """Overrides the default implementation"""
+
+        if isinstance(other, Deck):
+            loop = 0
+            SameCardNumber = True
+            SameCardColor = True
+            for card in self.deck:
+                SameCardNumber = (card.number == other.deck[loop].number) & SameCardNumber
+                SameCardColor = (card.color == other.deck[loop].color) & SameCardColor
+                loop += 1
+            print(SameCardColor,SameCardNumber)
+            return (SameCardColor & SameCardNumber)
+            
+        return False
+
+    def __repr__(self):
+        repre = ''
+        for card in self.deck:
+            repre = repre +  "Card : "+str(card.number)+", color: "+card.color
+        return repre
+
+    def __str__(self):
+        list_ = []
+        for card in self.deck:
+            list_.append(card.number)
+        return "deck : "+str(list_)+", color: "+self.color
 
 class Player:
 
-    def __init__(self,SIZE):
-        self.SIZE = SIZE
-        self.Deck = [i for i in range(2,self.SIZE)]
-        self.PileUP = [1]
-        self.PileDOWN = [self.SIZE]
-        self.Hand = []
+    def __init__(self,
+                 size: int,
+                 color: str
+                 ) -> None :
+
+        self.color = color
+        self.size = size
+        self.deckInstance = Deck(size,self.color)
+        self.deck = self.deckInstance.deck
+        self.PileUP = [Card(number = 1, color = self.color)]
+        self.PileDOWN = [Card(number = self.size, color = self.color)]
+        self.HandInstance = Hand([],self.color)
+        self.hand = self.HandInstance.hand
         self.PlayedOnOpponnentPiles = False
         
-    def ShuffleDeck(self):
-        np.random.shuffle(self.Deck)
-    
-    def EmptyPiles(self):
-        self.PileUP = [1]
-        self.PileDOWN = [self.SIZE]
 
-    def Draw(self,NumberOfCards):
+    def EmptyPiles(self):
+        self.PileUP = [Card(number = 1, color = self.color)]
+        self.PileDOWN = [Card(number = self.size, color = self.color)]
+
+    def Draw(self,
+             NumberOfCards: int
+             ) -> None:
+
         """
         Draws a number of cards equal to NumberOfCards from the deck (self.Deck).
         If the deck has not enough cards in it, the function draws the whole resting deck.
         """
-        if len(self.Deck) >= NumberOfCards :
-            self.Hand += self.Deck[-NumberOfCards:]
-            self.Deck = self.Deck[:-NumberOfCards]
+        if len(self.deck) >= NumberOfCards :
+            self.hand += self.deck[-NumberOfCards:]
+            self.deck = self.deck[:-NumberOfCards]
         else :
-            self.Hand += self.Deck
-            self.Deck = []
+            self.hand += self.deck
+            self.deck = []
 
     def setup(self):
-        Player.ShuffleDeck(self)
-        Player.EmptyPiles(self)
-        Player.Draw(self,6)
+        self.deckInstance.ShuffleDeck()
+        self.EmptyPiles()
+        self.Draw(6)
 
 
 class Game:
 
     def __init__(self):
-        self.SIZE = 60
-        self.Player1 = Player(self.SIZE)
-        self.Player2 = Player(self.SIZE)
+        self.size = 60
+        self.color1 = 'Gold'
+        self.color2 = 'Silver'
+        self.Player1 = Player(self.size,self.color1)
+        self.Player2 = Player(self.size,self.color2)
         self.ActivePlayer = 1
 
         self.Player1.setup()
@@ -55,29 +176,34 @@ class Game:
         self.P1GameOver = False 
         self.P2GameOver = False
 
-    def CheckAction(self,PileIndex,Number,PileName):
+    def CheckAction(self,
+                    PileIndex: int,
+                    Number: int,
+                    PileName: str):
         """
         Returns True if the rules allow ActivePlayer to put the card N° Number on PileName 'UP'/'DOWN' bellonging to player N° PileIndex
         Returns False if not
         """
+        # should take into account the color of cards with the active player: on peut paos mettre une carte Silver si on est le joueur 1 puisqu'on est le joueur Gold !!!
+
         if PileName=='UP':
 
             if PileIndex == 1:
                 if self.ActivePlayer == PileIndex :
-                    return (self.Player1.PileUP[-1:][0] < Number ) or\
-                        (self.Player1.PileUP[-1:][0] == Number + 10)
+                    return (self.Player1.PileUP[-1:][0].number < Number ) or\
+                        (self.Player1.PileUP[-1:][0].number == Number + 10)
                 elif not self.PlayedOnOpponnentPiles[self.ActivePlayer-1] :
-                    return (self.Player1.PileUP[-1:][0] > Number )
+                    return (self.Player1.PileUP[-1:][0].number > Number )
                 elif self.PlayedOnOpponnentPiles[self.ActivePlayer-1] :
                     print("Player {} has already played on opponents piles this turn !".format(self.ActivePlayer))
                     return False
 
             elif PileIndex == 2:
                 if self.ActivePlayer == PileIndex :
-                    return (self.Player2.PileUP[-1:][0] < Number ) or\
-                        (self.Player2.PileUP[-1:][0] == Number + 10)
+                    return (self.Player2.PileUP[-1:][0].number < Number ) or\
+                        (self.Player2.PileUP[-1:][0].number == Number + 10)
                 elif not self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
-                    return (self.Player2.PileUP[-1:][0] > Number )
+                    return (self.Player2.PileUP[-1:][0].number > Number )
                 elif not self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
                     print("Player {} has already played on opponents piles this turn !".format(self.ActivePlayer))
                     return False
@@ -87,20 +213,20 @@ class Game:
         elif PileName=='DOWN':
             if PileIndex == 1:
                 if self.ActivePlayer == PileIndex :
-                    return (self.Player1.PileDOWN[-1:][0] > Number ) or\
-                        (self.Player1.PileDOWN[-1:][0] == Number - 10)
+                    return (self.Player1.PileDOWN[-1:][0].number > Number ) or\
+                        (self.Player1.PileDOWN[-1:][0].number == Number - 10)
                 elif not self.PlayedOnOpponnentPiles[self.ActivePlayer-1] :
-                    return (self.Player1.PileDOWN[-1:][0] < Number )
+                    return (self.Player1.PileDOWN[-1:][0].number < Number )
                 elif self.PlayedOnOpponnentPiles[self.ActivePlayer-1] :
                     print("Player {} has already played on opponents piles this turn !".format(self.ActivePlayer))
                     return False
 
             elif PileIndex == 2:
                 if self.ActivePlayer == PileIndex :
-                    return (self.Player2.PileDOWN[-1:][0] > Number ) or\
-                        (self.Player2.PileDOWN[-1:][0] == Number - 10)
+                    return (self.Player2.PileDOWN[-1:][0].number > Number ) or\
+                        (self.Player2.PileDOWN[-1:][0].number == Number - 10)
                 elif not self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
-                    return (self.Player2.PileDOWN[-1:][0] < Number )
+                    return (self.Player2.PileDOWN[-1:][0].number < Number )
                 elif not self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
                     print("Player {} has already played on opponents piles this turn !".format(self.ActivePlayer))
                     return False
@@ -111,37 +237,51 @@ class Game:
             print("PileName {} unknown".format(PileName))
         
     
-    def Put(self,PileIndex,Number,PileName):
-        if Game.CheckAction(self,PileIndex,Number,PileName):
+    def Put(self,
+            PileIndex: int,
+            card : Card,
+            PileName: str):
+
+        # TODO change related to color of the card you're trying to put !!
+        if Game.CheckAction(self,PileIndex,card.number,PileName):
             if self.ActivePlayer != PileIndex:
                 self.PlayedOnOpponnentPiles[self.ActivePlayer-1] = True
             if PileIndex==1:
                 if PileName=='UP':
-                    self.Player1.PileUP.append(Number)
+                    self.Player1.PileUP.append(card)
                 if PileName=='DOWN':
-                    self.Player1.PileDOWN.append(Number)
+                    self.Player1.PileDOWN.append(card)
             elif PileIndex==2:
                 if PileName=='UP':
-                    self.Player2.PileUP.append(Number)
+                    self.Player2.PileUP.append(card)
                 if PileName=='DOWN':
-                    self.Player2.PileDOWN.append(Number)
+                    self.Player2.PileDOWN.append(card)
             return 0
         else:
-            print('Not possible to Put number {} on the Pile {} of the player {}'.format(Number,PileName,PileIndex))
+            print('Not possible to Put number {} on the Pile {} of the player {}'.format(card.number,PileName,PileIndex))
             return 1
     
-    def Play(self,PileIndex,Number,PileName):
+    def Play(self,
+             PileIndex: int,
+             card: Card,
+             PileName: str):
+        """
+        This function plays the card "card" on the pile "PileName"
+        """
+
         if self.ActivePlayer == 1:
-            if Number in self.Player1.Hand :
-                err = Game.Put(self,PileIndex,Number,PileName)
+            if card in self.Player1.hand :
+                err = Game.Put(self,PileIndex,card,PileName)
                 if err == 0 :
-                    self.Player1.Hand.remove(Number)
+                    self.Player1.hand.remove(card)
+                    print('Played !')
         elif self.ActivePlayer == 2:
-            if Number in self.Player2.Hand :
-                err = Game.Put(self,PileIndex,Number,PileName)
+            if card in self.Player2.hand :
+                err = Game.Put(self,PileIndex,card,PileName)
                 if err == 0 :
-                    self.Player2.Hand.remove(Number)           
-                
+                    self.Player2.hand.remove(card)           
+                    print('Played !')
+
     def Concede(self):
         if self.ActivePlayer == 1 :
             self.P1GameOver = True
@@ -157,21 +297,21 @@ class Game:
     def DrawEndOfTurn(self):
         if self.ActivePlayer == 1 :
             if self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
-                CardsInHandPlayer1 = len(self.Player1.Hand)
+                CardsInHandPlayer1 = len(self.Player1.hand)
                 self.Player1.Draw(6-CardsInHandPlayer1)
             else :
                 self.Player1.Draw(2)
         elif self.ActivePlayer == 2 :
             if self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
-                CardsInHandPlayer2 = len(self.Player2.Hand)
+                CardsInHandPlayer2 = len(self.Player2.hand)
                 self.Player2.Draw(6-CardsInHandPlayer2)
             else :
                 self.Player2.Draw(2)
 
     def EndOfTurn(self):
-        if (self.Player1.Deck == []) and (self.Player1.Hand == []):
+        if (self.Player1.deck == []) and (self.Player1.hand == []):
             self.P2GameOver = True # The Player 1 has won the game
-        elif (self.Player2.Deck == []) and (self.Player2.Hand == []):
+        elif (self.Player2.deck == []) and (self.Player2.hand == []):
             self.P1GameOver = True # The Player 2 has won the game
         Game.DrawEndOfTurn(self)
         self.PlayedOnOpponnentPiles = [False,False]
@@ -183,8 +323,8 @@ class Game:
         print("Pile DOWN Player 1 : {} \n".format(self.Player1.PileDOWN))
         print("Pile UP Player 2 : {}".format(self.Player2.PileUP))
         print("Pile DOWN Player 2 : {} \n".format(self.Player2.PileDOWN))
-        print("Hand Player 1 {} ".format(self.Player1.Hand))
-        print("Hand Player 2 {} \n \n \n ".format(self.Player2.Hand))
+        print("Hand Player 1 {} ".format(self.Player1.hand))
+        print("Hand Player 2 {} \n \n \n ".format(self.Player2.hand))
     
     def INPUT(self):
         Number = int(input("What card do you want to play ?"))
@@ -201,7 +341,10 @@ class Game:
 
 class TheGamePlay(Game):
 
-    def __init__(self, width = 1280, height = 720):
+    def __init__(self,
+                 width :int = 1280,
+                 height :int = 720
+                 )-> None:
 
         Game.__init__(self)
 
@@ -213,7 +356,10 @@ class TheGamePlay(Game):
         self.DefineColors()
         self.DefineImages()
 
-    def SetupPygame(self, width, height):
+    def SetupPygame(self, 
+                    width: int,
+                    height: int
+                    ) -> None:
 
         pygame.init()
 
@@ -260,7 +406,7 @@ class TheGamePlay(Game):
         #self.Images["BGsurface"].set_alpha(0)
 
 
-        CardReferenceList = [i for i in range(1,self.SIZE + 1)] + ['THEGAME','DOWN','UP']
+        CardReferenceList = [i for i in range(1,self.size + 1)] + ['THEGAME','DOWN','UP']
         for ColorStr in ['Gold','Silver']:
             for CardReference in CardReferenceList:
                 cardImg = pygame.image.load('./Pictures/Cards/'+ColorStr+'Cards/Card_'+str(CardReference)+'.png')
@@ -278,7 +424,9 @@ class TheGamePlay(Game):
         if self.ActivePlayer == 2 :
             self.DISPLAYSURF.blit(self.Images["Player2Img"], (0,0.5*self.WINDOWHEIGHT))
 
-    def IsOnAPile(self,x,y):
+    def IsOnAPile(self,
+                  x:int,
+                  y:int):
         # TODO change the function with : pile.colidepoint
         if x > (self.WINDOWWIDTH - self.WIDTHCARD)/2 and x < (self.WINDOWWIDTH + self.WIDTHCARD)/2 :
             if y > self.HEIGHTCARD and y < 5*self.HEIGHTCARD :
@@ -288,49 +436,52 @@ class TheGamePlay(Game):
         else:
             return False
 
-    def leftTopCoordsOfCard(self,i,PlayerSelected,ActivePlayer = True):
+    def leftTopCoordsOfCard(self,
+                            i: int,
+                            PlayerSelected: int,
+                            ActivePlayer = True):
         # Convert board coordinates to pixel coordinates
         if PlayerSelected == 1:
             if ActivePlayer :
-                x0 = (self.WINDOWWIDTH-len(self.Player1.Hand)*self.WIDTHCARD)//2 
+                x0 = (self.WINDOWWIDTH-len(self.Player1.hand)*self.WIDTHCARD)//2 
                 return (x0+i*self.WIDTHCARD,5*self.HEIGHTCARD)
             elif not ActivePlayer :
-                x0 = (self.WINDOWWIDTH-len(self.Player2.Hand)*self.WIDTHCARD)//2
+                x0 = (self.WINDOWWIDTH-len(self.Player2.hand)*self.WIDTHCARD)//2
                 return (x0+i*self.WIDTHCARD,0)
         elif PlayerSelected == 2:
             if ActivePlayer :   
-                x0 = (self.WINDOWWIDTH-len(self.Player2.Hand)*self.WIDTHCARD)//2 
+                x0 = (self.WINDOWWIDTH-len(self.Player2.hand)*self.WIDTHCARD)//2 
                 return (x0+i*self.WIDTHCARD,5*self.HEIGHTCARD)
             elif not ActivePlayer :
-                x0 = (self.WINDOWWIDTH-len(self.Player1.Hand)*self.WIDTHCARD)//2
+                x0 = (self.WINDOWWIDTH-len(self.Player1.hand)*self.WIDTHCARD)//2
                 return (x0+i*self.WIDTHCARD,0)
 
-    def DrawCardOnBoard(self,ColorStr,CardReference,PlayerSelected,LeftTop=None, index=-1 ,Game = None, ActivePlayer = True):
+    def DrawCardOnBoard(self,ColorStr,CardReference,PlayerSelected,LeftTop=None, index=-1 , ActivePlayer = True):
         
         if index>=0:
-            Card = self.DISPLAYSURF.blit(self.Images[str(CardReference)+ColorStr], self.leftTopCoordsOfCard(index,PlayerSelected,ActivePlayer=ActivePlayer))
-            return Card
+            card = self.DISPLAYSURF.blit(self.Images[str(CardReference)+ColorStr], self.leftTopCoordsOfCard(index,PlayerSelected,ActivePlayer=ActivePlayer))
+            return card
         elif index<0:
-            Card = self.DISPLAYSURF.blit(self.Images[str(CardReference)+ColorStr], (LeftTop[0], LeftTop[1]))
-            return Card
-
+            card = self.DISPLAYSURF.blit(self.Images[str(CardReference)+ColorStr], (LeftTop[0], LeftTop[1]))
+            return card
+            
     def MoveACard(self,x,y,CardIndex,PlayerSelected):
         LeftTop = [x-(self.WIDTHCARD//2),y-(self.HEIGHTCARD//2)]
         if PlayerSelected == 1:
-            self.DrawCardOnBoard('Gold',self.Player1.Hand[CardIndex],PlayerSelected,LeftTop=LeftTop, index=-1 ,Game = None, ActivePlayer = True)
+            self.DrawCardOnBoard('Gold',self.Player1.hand[CardIndex].number,PlayerSelected,LeftTop=LeftTop, index=-1 ,ActivePlayer = True)
             pygame.draw.rect(self.DISPLAYSURF, self.HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , self.WIDTHCARD, self.HEIGHTCARD ), 4)
             
         elif PlayerSelected == 2:
-            self.DrawCardOnBoard('Silver',self.Player2.Hand[CardIndex],PlayerSelected,LeftTop=LeftTop, index=-1 ,Game = None, ActivePlayer = True)
+            self.DrawCardOnBoard('Silver',self.Player2.hand[CardIndex].number,PlayerSelected,LeftTop=LeftTop, index=-1 , ActivePlayer = True)
             pygame.draw.rect(self.DISPLAYSURF, self.HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , self.WIDTHCARD, self.HEIGHTCARD ), 4)
 
     def GetCardIndex(self,x,y,PlayerSelected):
         if y > self.WINDOWHEIGHT - self.HEIGHTCARD:
 
             if PlayerSelected == 1:
-                L = len(self.Player1.Hand)
+                L = len(self.Player1.hand)
             else :
-                L = len(self.Player2.Hand)
+                L = len(self.Player2.hand)
             
             x0 = (self.WINDOWWIDTH-L*self.WIDTHCARD)//2
             if x > x0 and x < x0 + L*self.WIDTHCARD:
@@ -353,39 +504,41 @@ class TheGamePlay(Game):
         else :
             return False
 
-    def DrawBoard(self,PlayerSelected):
+    def DrawBoard(self,
+                  PlayerSelected: int
+                  ) -> None:
         i = 0
         if PlayerSelected == 1:
             ColorStr = 'Gold'
-            for number in self.Player1.Hand:
-                self.DrawCardOnBoard(ColorStr,number,PlayerSelected,index = i,Game=Game)
+            for card in self.Player1.hand:
+                self.DrawCardOnBoard(card.color,card.number,PlayerSelected,index = i)
                 i+=1
 
-            NumberOfCardsOppo = len(self.Player2.Hand)
+            NumberOfCardsOppo = len(self.Player2.hand)
             for k in range(NumberOfCardsOppo):
-                self.DrawCardOnBoard('Silver','THEGAME',PlayerSelected,index = k,Game=Game,ActivePlayer=False)
+                self.DrawCardOnBoard('Silver','THEGAME',PlayerSelected,index = k,ActivePlayer=False)
 
 
             ####### DRAWS THE PILES #######
 
             # Draws The Pile DOWN of ActivePlayer    
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),4*self.HEIGHTCARD]
-            PileDownAP = self.DrawCardOnBoard(ColorStr,self.Player1.PileDOWN[-1:][0],PlayerSelected,LeftTop)
+            PileDownAP = self.DrawCardOnBoard(self.Player1.PileDOWN[-1:][0].color,self.Player1.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
             # Draws The Pile Up of ActivePlayer   
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),3*self.HEIGHTCARD]
-            PileUPAP = self.DrawCardOnBoard(ColorStr,self.Player1.PileUP[-1:][0],PlayerSelected,LeftTop)
+            PileUPAP = self.DrawCardOnBoard(self.Player1.PileUP[-1:][0].color,self.Player1.PileUP[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
             # Draws The Pile UP of NonActivePlayer    
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),2*self.HEIGHTCARD]
-            PileUPNAP = self.DrawCardOnBoard('Silver',self.Player2.PileUP[-1:][0],PlayerSelected,LeftTop)
+            PileUPNAP = self.DrawCardOnBoard(self.Player2.PileUP[-1:][0].color,self.Player2.PileUP[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
             # Draws The Pile DOWN of NonActivePlayer   
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),self.HEIGHTCARD]
-            PileDownNAP = self.DrawCardOnBoard('Silver',self.Player2.PileDOWN[-1:][0],PlayerSelected,LeftTop)
+            PileDownNAP = self.DrawCardOnBoard(self.Player2.PileDOWN[-1:][0].color,self.Player2.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
 
@@ -422,32 +575,32 @@ class TheGamePlay(Game):
 
         elif PlayerSelected == 2:
             ColorStr = 'Silver'
-            for number in self.Player2.Hand:
-                self.DrawCardOnBoard('Silver',number,PlayerSelected,index = i,Game=Game)
+            for card in self.Player2.hand:
+                self.DrawCardOnBoard(card.color,card.number,PlayerSelected,index = i)
                 i+=1
 
-            NumberOfCardsOppo = len(self.Player1.Hand)
+            NumberOfCardsOppo = len(self.Player1.hand)
             for k in range(NumberOfCardsOppo):
-                self.DrawCardOnBoard('Gold','THEGAME',PlayerSelected,index = k,Game=Game,ActivePlayer=False)
+                self.DrawCardOnBoard('Gold','THEGAME',PlayerSelected,index = k,ActivePlayer=False)
 
             # Draws The Pile DOWN of ActivePlayer    
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),4*self.HEIGHTCARD]
-            PileDownAP = self.DrawCardOnBoard(ColorStr,self.Player2.PileDOWN[-1:][0],PlayerSelected,LeftTop)
+            PileDownAP = self.DrawCardOnBoard(self.Player2.PileDOWN[-1:][0].color,self.Player2.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
             # Draws The Pile UP of ActivePlayer   
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),3*self.HEIGHTCARD]
-            PileUPAP = self.DrawCardOnBoard(ColorStr,self.Player2.PileUP[-1:][0],PlayerSelected,LeftTop)
+            PileUPAP = self.DrawCardOnBoard(self.Player2.PileUP[-1:][0].color,self.Player2.PileUP[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
             # Draws The Pile UP of NonActivePlayer    
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),2*self.HEIGHTCARD]
-            PileUPNAP = self.DrawCardOnBoard('Gold',self.Player1.PileUP[-1:][0],PlayerSelected,LeftTop)
+            PileUPNAP = self.DrawCardOnBoard(self.Player1.PileUP[-1:][0].color,self.Player1.PileUP[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
             # Draws The Pile DOWN of NonActivePlayer   
             LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),self.HEIGHTCARD]
-            PileDownNAP = self.DrawCardOnBoard('Gold',self.Player1.PileDOWN[-1:][0],PlayerSelected,LeftTop)
+            PileDownNAP = self.DrawCardOnBoard(self.Player1.PileDOWN[-1:][0].color,self.Player1.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
 
@@ -483,8 +636,3 @@ class TheGamePlay(Game):
             pygame.draw.rect(self.DISPLAYSURF, self.Colors["GRAY"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
         
         return PileDownAP,PileUPAP,PileDownNAP,PileUPNAP,APDeck,NAPDeck
-
-
-
-
-
