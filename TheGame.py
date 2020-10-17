@@ -173,6 +173,9 @@ class Game:
         self.PlayedOnOpponnentPilesPlayer1 = self.PlayedOnOpponnentPiles[0]
         self.PlayedOnOpponnentPilesPlayer2 = self.PlayedOnOpponnentPiles[1] 
 
+        self.PlayedThisTurnPlayer1 = []
+        self.PlayedThisTurnPlayer2 = []
+
         self.P1GameOver = False 
         self.P2GameOver = False
 
@@ -274,12 +277,14 @@ class Game:
                 err = Game.Put(self,PileIndex,card,PileName)
                 if err == 0 :
                     self.Player1.hand.remove(card)
+                    self.PlayedThisTurnPlayer1.append((card,str(PileIndex)+PileName))
                     print('Played !')
         elif self.ActivePlayer == 2:
             if card in self.Player2.hand :
                 err = Game.Put(self,PileIndex,card,PileName)
                 if err == 0 :
-                    self.Player2.hand.remove(card)           
+                    self.Player2.hand.remove(card)      
+                    self.PlayedThisTurnPlayer2.append((card,str(PileIndex)+PileName))     
                     print('Played !')
 
     def Concede(self):
@@ -308,14 +313,33 @@ class Game:
             else :
                 self.Player2.Draw(2)
 
+    def HasTheRightToEndTurn(self):
+        if self.ActivePlayer == 1:
+            if len(self.PlayedThisTurnPlayer1) < 2:
+                return 0 
+            else:
+                return 1
+        if self.ActivePlayer == 2:
+            if len(self.PlayedThisTurnPlayer2) < 2:
+                return 0 
+            else:
+                return 1
+
     def EndOfTurn(self):
-        if (self.Player1.deck == []) and (self.Player1.hand == []):
-            self.P2GameOver = True # The Player 1 has won the game
-        elif (self.Player2.deck == []) and (self.Player2.hand == []):
-            self.P1GameOver = True # The Player 2 has won the game
-        Game.DrawEndOfTurn(self)
-        self.PlayedOnOpponnentPiles = [False,False]
-        Game.ChangeActivePlayer(self)
+        if self.HasTheRightToEndTurn() == 1: 
+            self.PlayedThisTurnPlayer1 = []
+            self.PlayedThisTurnPlayer2 = []
+            if (self.Player1.deck == []) and (self.Player1.hand == []):
+                self.P2GameOver = True # The Player 1 has won the game
+            elif (self.Player2.deck == []) and (self.Player2.hand == []):
+                self.P1GameOver = True # The Player 2 has won the game
+            Game.DrawEndOfTurn(self)
+            self.PlayedOnOpponnentPiles = [False,False]
+            Game.ChangeActivePlayer(self)
+            return 1
+        else:
+            return 0
+
 
     def Display(self):
         print("Turn of Player {} \n".format(self.ActivePlayer))
@@ -364,7 +388,7 @@ class TheGamePlay(Game):
         pygame.init()
 
         # initialize font; must be called after 'pygame.init()' to avoid 'Font not Initialized' error
-        self.myfont = pygame.font.SysFont("monospace", 30)
+        self.myfont = pygame.font.SysFont("monospace", 35,bold=True)
 
         self.FPS = 120 # frames per second setting
         self.clock = pygame.time.Clock()
@@ -389,7 +413,9 @@ class TheGamePlay(Game):
                         "YELLOW"   : (255, 255,   0),
                         "ORANGE"   : (255, 128,   0),
                         "PURPLE"   : (255,   0, 255),
-                        "CYAN"     : (  0, 255, 255)}
+                        "CYAN"     : (  0, 255, 255),
+                        "SILVER"   : (169, 169, 169),
+                        "GOLD"     : (218, 165,  32)}
 
         self.HIGHLIGHTCOLOR = self.Colors["ORANGE"]
 
@@ -400,7 +426,8 @@ class TheGamePlay(Game):
                         "TurnOfImg" : pygame.transform.scale(pygame.image.load('./Pictures/TurnOf.png'),(int(0.2*self.WINDOWWIDTH), int(0.1*self.WINDOWHEIGHT))),
                         "BGsurface" : pygame.transform.scale(pygame.image.load('./Pictures/BG1280x720.jpg').convert(),(self.WINDOWWIDTH, self.WINDOWHEIGHT)),
                         "EndOfTurn" : pygame.transform.scale(pygame.image.load('./Pictures/EndOfTurn.png'),(int(0.2*self.WINDOWWIDTH), int(0.1*self.WINDOWHEIGHT))),
-                        "Quit" : pygame.transform.scale(pygame.image.load('./Pictures/Quit.png'),(int(0.2*self.WINDOWWIDTH), int(0.2*self.WINDOWWIDTH)))}
+                        "Quit" : pygame.transform.scale(pygame.image.load('./Pictures/Quit.png'),(int(0.2*self.WINDOWWIDTH), int(0.2*self.WINDOWWIDTH))),
+                        "NoRightEOT" : pygame.transform.scale(pygame.image.load('./Pictures/NoRightEOT.png'),(int(0.8*self.WINDOWWIDTH), int(0.5*self.WINDOWHEIGHT)))}
                         # with or without convert ?? TODO
 
         #self.Images["BGsurface"].set_alpha(0)

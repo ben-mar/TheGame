@@ -1,4 +1,3 @@
-import numpy as np
 import unittest
 import TheGame
 
@@ -310,6 +309,26 @@ class GameTest(unittest.TestCase):
         self.assertListEqual(self.PLAYER2HAND,self.Game.Player2.hand)
         self.assertListEqual(self.Game.Player2.deck,TheGame.CreateListOfCards([5,32,9],self.color2))
 
+    def test_HasTheRightToEndTurn(self):
+        PileIndex = ["False",1,2]
+        self.Game = TheGame.Game()
+
+        self.Game.ActivePlayer = 2
+
+        self.Game.Player1.hand = TheGame.CreateListOfCards([2,14,16,18,47,57],self.color1)
+        self.Game.Player2.hand = TheGame.CreateListOfCards([20,34,36,38,49,57],self.color2)
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,13],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,51],self.color1)
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5,6],self.color2)
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color2)      
+
+
+        self.Game.Play(PileIndex[2],TheGame.Card(20,self.color2),'UP')
+        self.assertEqual(self.Game.HasTheRightToEndTurn(),0)
+
+        self.Game.Play(PileIndex[2],TheGame.Card(34,self.color2),'UP')
+        self.assertEqual(self.Game.HasTheRightToEndTurn(),1)        
+
     def test_EndOfTurn(self):
         self.Game = TheGame.Game()
 
@@ -326,7 +345,10 @@ class GameTest(unittest.TestCase):
         self.PLAYER2HAND = TheGame.CreateListOfCards([7,52,45,51,53,48],self.color2)
         self.PLAYER2DECK = TheGame.CreateListOfCards([5,32,9],self.color2)
 
-        self.Game.EndOfTurn()
+        self.assertEqual(self.Game.EndOfTurn(),0)
+
+        self.Game.PlayedThisTurnPlayer1 = ['Whatever1','Whatever2']
+        self.assertEqual(self.Game.EndOfTurn(),1)
 
         self.assertListEqual(self.PLAYER1HAND,self.Game.Player1.hand)
         self.assertListEqual(self.Game.Player1.deck,self.PLAYER1DECK)
@@ -334,8 +356,9 @@ class GameTest(unittest.TestCase):
         self.assertEqual(self.Game.ActivePlayer,2)
 
         self.Game.PlayedOnOpponnentPiles = [False,True] 
+        self.Game.PlayedThisTurnPlayer2 = ['Whatever1','Whatever2']
 
-        self.Game.EndOfTurn()
+        self.assertEqual(self.Game.EndOfTurn(),1)
         self.assertListEqual(self.PLAYER2HAND,self.Game.Player2.hand)
         self.assertListEqual(self.Game.Player2.deck,self.PLAYER2DECK)      
         self.assertListEqual(self.Game.PlayedOnOpponnentPiles,[False,False])
@@ -347,15 +370,16 @@ class GameTest(unittest.TestCase):
         self.PLAYER1DECK = []
 
         self.Game.PlayedOnOpponnentPiles = [True,False]
+        self.Game.PlayedThisTurnPlayer1 = ['Whatever1','Whatever2']
 
-        self.Game.EndOfTurn()
+        self.assertEqual(self.Game.EndOfTurn(),1)
         self.assertListEqual(self.PLAYER1HAND,self.Game.Player1.hand)
         self.assertListEqual(self.Game.Player1.deck,self.PLAYER1DECK)   
         self.Game.ActivePlayer = 1
+        self.Game.PlayedThisTurnPlayer1 = ['Whatever1','Whatever2']
 
         self.Game.Player1.hand = []
-        self.Game.EndOfTurn()
+        self.assertEqual(self.Game.EndOfTurn(),1)
         self.assertTrue(self.Game.P2GameOver)
 
-
-
+        

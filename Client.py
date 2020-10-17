@@ -144,7 +144,7 @@ class GameClient:
 
 							PileIndex,CardStr,PileName = msg.split(";")
 							Card = self.Decode(CardStr)[0]
-							self.game.Play(int(PileIndex),Card,PileName) #TODO
+							self.game.Play(int(PileIndex),Card,PileName)
 
 							# message to check piles, hand and deck
 							LenghtHands = len(self.game.Player1.hand)*len(self.game.Player2.hand)
@@ -165,7 +165,7 @@ class GameClient:
 								self.conn.sendto(msg2.encode(), (self.addr, self.serverport))
 
 						elif cmd == "EOT": # End Of Turn
-
+							
 							self.game.EndOfTurn()
 
 						elif cmd == "CAP": # Change ActivePlayer
@@ -220,17 +220,17 @@ class GameClient:
 				# shows the number of cards of the players
 				if APDeck.collidepoint(mousex,mousey) :
 					if PlayerSelected == 1 :
-						label = self.game.myfont.render(str(len(self.game.Player1.deck)), 1, (255,255,0))
+						label = self.game.myfont.render(str(len(self.game.Player1.deck)), 1, self.game.Colors["GOLD"])
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH-4.4*self.game.WIDTHCARD)/2),int(4.5*self.game.HEIGHTCARD)))
 					elif PlayerSelected == 2 :
-						label = self.game.myfont.render(str(len(self.game.Player2.deck)), 1, (169,169,169))
+						label = self.game.myfont.render(str(len(self.game.Player2.deck)), 1, self.game.Colors["SILVER"]) 
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH-4.4*self.game.WIDTHCARD)/2),int(4.5*self.game.HEIGHTCARD)))
 				if NAPDeck.collidepoint(mousex,mousey) :
 					if PlayerSelected == 1 :
-						label = self.game.myfont.render(str(len(self.game.Player2.deck)), 1, (169,169,169))
+						label = self.game.myfont.render(str(len(self.game.Player2.deck)), 1, self.game.Colors["SILVER"])
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH+3.4*self.game.WIDTHCARD)/2),int(2.5*self.game.HEIGHTCARD)))
 					elif PlayerSelected == 2 :
-						label = self.game.myfont.render(str(len(self.game.Player1.deck)), 1, (255,255,0))
+						label = self.game.myfont.render(str(len(self.game.Player1.deck)), 1, self.game.Colors["GOLD"])
 						self.game.DISPLAYSURF.blit(label, (int((self.game.WINDOWWIDTH+3.4*self.game.WIDTHCARD)/2),int(2.5*self.game.HEIGHTCARD)))
 
 				# we move the image selected
@@ -310,26 +310,32 @@ class GameClient:
 							NotClickedOut = True
 							
 							# TODO : handle case where the pile is empty (just 1 card in it : division by 0 )
-							WidthSeenCard = (PileBoxSize[0] - self.game.WIDTHCARD)/(len(self.game.Player1.PileDOWN)-1) # represent the width of a card displayed but not completely shown on a pile
+							# TODO : fetch the active player before so that WidthSeenCard depends on the selected player 
+							WidthSeenCard = (PileBoxSize[0] - self.game.WIDTHCARD)/(len(self.game.Player1.PileDOWN)+1) # represent the width of a card displayed but not completely shown on a pile
 
 							while NotClickedOut:
 								#print("In here !")
 
 								if PlayerSelected == 1:
+									lenPileDOWN = len(self.game.Player1.PileDOWN)
+									PileDownCurr = self.game.Player1.PileDOWN 
+								else:
+									lenPileDOWN = len(self.game.Player2.PileDOWN)
+									PileDownCurr = self.game.Player2.PileDOWN 									
 
-									i = len(self.game.Player1.PileDOWN)*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin)
-									j = 0
-									for number in self.game.Player1.PileDOWN :
-										if j<i : # before the card i
-											self.game.DrawCardOnBoard('Gold',str(number),PlayerSelected,LeftTop=[int(x0+j*WidthSeenCard),y0])
-										elif j==i:
-											self.game.DrawCardOnBoard('Gold',str(number),PlayerSelected,LeftTop=[int(x0+j*WidthSeenCard),y0])
-										elif j>i:
-											self.game.DrawCardOnBoard('Gold',str(number),PlayerSelected,LeftTop=[int(x0+(j-1)*WidthSeenCard+self.game.WIDTHCARD),y0])
-										j+=1
+								i =lenPileDOWN*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin)
+								j = 0
+								for card in PileDownCurr:
+									if j<i : # before the card i
+										self.game.DrawCardOnBoard(card.color,card.number,PlayerSelected,LeftTop=[int(x0+j*WidthSeenCard),y0])
+									elif j==i:
+										self.game.DrawCardOnBoard(card.color,card.number,PlayerSelected,LeftTop=[int(x0+j*WidthSeenCard),y0])
+									elif j>i:
+										self.game.DrawCardOnBoard(card.color,card.number,PlayerSelected,LeftTop=[int(x0+(j-1)*WidthSeenCard+self.game.WIDTHCARD),y0])
+									j+=1
 
 								if PlayerSelected == 2:
-									for number in self.game.Player2.PileDOWN :
+									for card in self.game.Player2.PileDOWN :
 										pass
 															
 								for event in pygame.event.get():
@@ -363,7 +369,60 @@ class GameClient:
 								self.game.clock.tick(self.game.FPS) 
 
 						elif PileUPAP.collidepoint(mousex,mousey):
-							pass
+							NotClickedOut = True
+							
+							# TODO : handle case where the pile is empty (just 1 card in it : division by 0 )
+							WidthSeenCard = (PileBoxSize[0] - self.game.WIDTHCARD)/(len(self.game.Player1.PileDOWN)+1) # represent the width of a card displayed but not completely shown on a pile
+
+							while NotClickedOut:
+								#print("In here !")
+
+								if PlayerSelected == 1:
+
+									i = len(self.game.Player1.PileDOWN)*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin)
+									j = 0
+									for card in self.game.Player1.PileDOWN :
+										if j<i : # before the card i
+											self.game.DrawCardOnBoard(card.color,card.number,PlayerSelected,LeftTop=[int(x0+j*WidthSeenCard),y0])
+										elif j==i:
+											self.game.DrawCardOnBoard(card.color,card.number,PlayerSelected,LeftTop=[int(x0+j*WidthSeenCard),y0])
+										elif j>i:
+											self.game.DrawCardOnBoard(card.color,card.number,PlayerSelected,LeftTop=[int(x0+(j-1)*WidthSeenCard+self.game.WIDTHCARD),y0])
+										j+=1
+
+								if PlayerSelected == 2:
+									for card in self.game.Player2.PileDOWN :
+										pass
+															
+								for event in pygame.event.get():
+									if event.type == MOUSEBUTTONDOWN and event.button == 1 and not (PileBox.collidepoint(mousex,mousey) or SurfCursorBlit.collidepoint(mousex,mousey)):
+										NotClickedOut = False
+									elif event.type == MOUSEBUTTONDOWN and event.button == 1 and CursorBlit.collidepoint(mousex,mousey):
+										CursorSelected = True
+									elif event.type == MOUSEBUTTONUP and event.button == 1 and CursorSelected:
+										CursorSelected = False
+									elif event.type == MOUSEMOTION:
+										mousex, mousey = event.pos
+								
+								if CursorSelected:
+									CursorPos = mousex
+
+									# limit the cursor to the surfcursor
+									if CursorPos > CursorPosMax:
+										CursorPos = CursorPosMax
+									elif CursorPos < CursorPosMin:
+										CursorPos = CursorPosMin
+
+								# display Cursor and CursorBar
+								SurfCursorBlit = self.game.DISPLAYSURF.blit(SurfCursor, (x0SurfCursor,y0SurfCursor))
+
+								pygame.draw.rect(self.game.DISPLAYSURF, self.game.Colors["GRAY"],
+								( x0SurfCursor, y0SurfCursor , SurfCursorSize[0],SurfCursorSize[1] ), 4)
+
+								CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (CursorPos-CursorSize[0]/2,y0 + 1.5*self.game.HEIGHTCARD))
+								
+								pygame.display.update()
+								self.game.clock.tick(self.game.FPS) 
 						elif PileDownNAP.collidepoint(mousex,mousey):
 							pass
 						elif PileUPNAP.collidepoint(mousex,mousey): 
@@ -373,8 +432,28 @@ class GameClient:
 						print('concede')
 						break 
 					elif boxRectEOT.collidepoint(mousex,mousey):
-						self.conn.sendto("EOT".encode(), (self.addr, self.serverport))
+						if self.game.HasTheRightToEndTurn() == 1:
+							self.conn.sendto("EOT".encode(), (self.addr, self.serverport))
+						elif self.game.ActivePlayer != PlayerSelected:
+							None
+						else:
+							GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
+							GraySurf.fill((150,150,150,150))
+							NotClickedOutEOTScreen = True
+							x0 = 0.1*self.game.WINDOWWIDTH
+							y0 = int(self.game.WINDOWHEIGHT/4)
 
+							self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+							self.game.DISPLAYSURF.blit(self.game.Images["NoRightEOT"], (x0,y0))
+
+							while NotClickedOutEOTScreen:
+
+								for event in pygame.event.get():
+									if event.type == MOUSEBUTTONDOWN and event.button == 1:
+										NotClickedOutEOTScreen = False
+
+								pygame.display.update()
+								self.game.clock.tick(self.game.FPS) 	
 
 				pygame.display.update()
 				self.game.clock.tick(self.game.FPS)  
