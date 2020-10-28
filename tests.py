@@ -154,93 +154,126 @@ class GameTest(unittest.TestCase):
         self.color1 = 'Gold'
         self.color2 = 'Silver'
 
+    def test_deepcopy(self):
+        # todo
+        self.Game = TheGame.Game()
+
+    def test_loaddeepcopy(self):
+        #todo
+        self.Game = TheGame.Game()
+
     def test_checkAction(self):
 
         self.Game = TheGame.Game()
-        PileIndex = ["False",1,2]
 
         self.Game.Player1.PileUP = TheGame.CreateListOfCards([1],self.color1)
         self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60],self.color1)
-        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5],self.color1) 
-        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53],self.color1)
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5],self.color2) 
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53],self.color2)
 
-        self.assertTrue(self.Game.CheckAction(PileIndex[1],3,'UP'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[1],59,'UP'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[1],56,'DOWN'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[1],1,'DOWN'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[2],3,'UP'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[2],6,'UP'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[2],56,'DOWN'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[2],52,'DOWN'))
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                            "1DOWN" : self.Game.Player1.PileDOWN,
+                            "2UP" : self.Game.Player2.PileUP,
+                            "2DOWN" : self.Game.Player2.PileDOWN}
+
+        PlayerSelected = 1
+        print()
+
+        self.assertTrue(self.Game.CheckAction('1UP',TheGame.Card(3,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('1UP',TheGame.Card(59,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('1DOWN',TheGame.Card(56,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('1DOWN',TheGame.Card(1,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('2UP',TheGame.Card(3,'gold'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('2UP',TheGame.Card(6,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('2DOWN',TheGame.Card(56,'gold'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('2DOWN',TheGame.Card(52,'gold'),PlayerSelected))
 
 
         self.Game.ActivePlayer = 2
         self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,13],self.color1)
         self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,51],self.color1)
-        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5,6],self.color1)
-        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color1)
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5,6],self.color2)
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color2)
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                    "1DOWN" : self.Game.Player1.PileDOWN,
+                    "2UP" : self.Game.Player2.PileUP,
+                    "2DOWN" : self.Game.Player2.PileDOWN}
 
-        self.assertTrue(self.Game.CheckAction(PileIndex[1],3,'UP'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[1],59,'UP'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[1],56,'DOWN'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[1],1,'DOWN'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[2],3,'UP'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[2],6,'UP'))
-        self.assertTrue(self.Game.CheckAction(PileIndex[2],59,'DOWN'))
-        self.assertFalse(self.Game.CheckAction(PileIndex[2],52,'DOWN'))
-    
+        PlayerSelected = 2
+
+        self.assertTrue(self.Game.CheckAction('1UP',TheGame.Card(3,'silver'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('1UP',TheGame.Card(59,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('1DOWN',TheGame.Card(56,'gold'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('1DOWN',TheGame.Card(1,'gold'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('2UP',TheGame.Card(3,'gold'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('2UP',TheGame.Card(6,'gold'),PlayerSelected))
+        self.assertTrue(self.Game.CheckAction('2DOWN',TheGame.Card(59,'gold'),PlayerSelected))
+        self.assertFalse(self.Game.CheckAction('2DOWN',TheGame.Card(52,'gold'),PlayerSelected))
+
+
     def test_put(self):
 
-        PileIndex = ["False",1,2]
         self.Game = TheGame.Game()
         self.Game.ActivePlayer = 2
+        PlayerSelected = 2
 
         self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,13],self.color1)
         self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,51],self.color1)
         self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5,6],self.color2)
         self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color2)
-        
+
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                    "1DOWN" : self.Game.Player1.PileDOWN,
+                    "2UP" : self.Game.Player2.PileUP,
+                    "2DOWN" : self.Game.Player2.PileDOWN}
+
         # the player 2 puts on player 1's pile Up the number 5 < 13 : Works !
-        self.Game.Put(PileIndex[1],TheGame.Card(5,self.color1),'UP')
-        self.assertListEqual(self.Game.Player1.PileUP,TheGame.CreateListOfCards([1,13,5],self.color1))
+        self.Game.Put('1UP',TheGame.Card(5,self.color1),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['1UP'],TheGame.CreateListOfCards([1,13,5],self.color1))
 
         # the player 2 already played on opponent piles : Doesn't work ! Moreover the card is too high to be put on this pile (59 >5)
-        self.Game.Put(PileIndex[1],TheGame.Card(59,self.color1),'UP')
-        self.assertListEqual(self.Game.Player1.PileUP,TheGame.CreateListOfCards([1,13,5],self.color1))
+        self.Game.Put('1UP',TheGame.Card(59,self.color1),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['1UP'],TheGame.CreateListOfCards([1,13,5],self.color1))
 
         # the player 2 already played on opponent piles : Doesn't work !
-        self.Game.Put(PileIndex[1],TheGame.Card(56,self.color1),'DOWN')
-        self.assertListEqual(self.Game.Player1.PileDOWN,TheGame.CreateListOfCards([60,51],self.color1))
+        self.Game.Put('1DOWN',TheGame.Card(56,self.color1),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['1DOWN'],TheGame.CreateListOfCards([60,51],self.color1))
 
         # let's reset the played on opponent piles for player 2
         self.Game.PlayedOnOpponnentPiles[1] = False
 
-        self.Game.Put(PileIndex[1],TheGame.Card(2,self.color2),'UP')
-        self.assertListEqual(self.Game.Player1.PileUP,TheGame.CreateListOfCards([1,13,5],self.color1)+[TheGame.Card(2,self.color2)])
+        self.Game.Put('1UP',TheGame.Card(2,self.color2),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['1UP'],TheGame.CreateListOfCards([1,13,5],self.color1)+[TheGame.Card(2,self.color2)])
 
         self.Game.ActivePlayer = 1
-        self.Game.Put(PileIndex[1],TheGame.Card(46,self.color1),'DOWN')
-        self.assertListEqual(self.Game.Player1.PileDOWN,TheGame.CreateListOfCards([60,51,46],self.color1))
+        PlayerSelected = 1
 
-        self.Game.Put(PileIndex[1],TheGame.Card(56,self.color1),'DOWN')
-        self.assertListEqual(self.Game.Player1.PileDOWN,TheGame.CreateListOfCards([60,51,46,56],self.color1))
+        self.Game.Put('1DOWN',TheGame.Card(46,self.color1),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['1DOWN'],TheGame.CreateListOfCards([60,51,46],self.color1))
+
+        self.Game.Put('1DOWN',TheGame.Card(56,self.color1),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['1DOWN'],TheGame.CreateListOfCards([60,51,46,56],self.color1))
 
 
         self.Game.ActivePlayer = 2
-        self.Game.Put(PileIndex[2],TheGame.Card(3,self.color2),'UP')
-        self.assertListEqual(self.Game.Player2.PileUP, TheGame.CreateListOfCards([1,5,6],self.color2))
+        PlayerSelected = 2
+
+        self.Game.Put('2UP',TheGame.Card(3,self.color2),PlayerSelected)
+        self.assertListEqual(self.Game.Piles['2UP'], TheGame.CreateListOfCards([1,5,6],self.color2))
         
-        self.Game.Put(PileIndex[2],TheGame.Card(14,self.color2),'UP')
-        self.Game.Put(PileIndex[2],TheGame.Card(21,self.color2),'UP')
-        self.Game.Put(PileIndex[2],TheGame.Card(11,self.color2),'UP')
-        self.assertEqual(self.Game.Player2.PileUP, TheGame.CreateListOfCards([1,5,6,14,21,11],self.color2))
+        self.Game.Put('2UP',TheGame.Card(14,self.color2),PlayerSelected)
+        self.Game.Put('2UP',TheGame.Card(21,self.color2),PlayerSelected)
+        self.Game.Put('2UP',TheGame.Card(11,self.color2),PlayerSelected)
+        self.assertEqual(self.Game.Piles['2UP'], TheGame.CreateListOfCards([1,5,6,14,21,11],self.color2))
+
 
     def test_play(self):
 
-        PileIndex = ["False",1,2]
+
         self.Game = TheGame.Game()
 
         self.Game.ActivePlayer = 2
+        PlayerSelected = 2
 
         self.Game.Player1.hand = TheGame.CreateListOfCards([2,14,16,18,47,57],self.color1)
         self.Game.Player2.hand = TheGame.CreateListOfCards([20,34,36,38,49,57],self.color2)
@@ -249,32 +282,42 @@ class GameTest(unittest.TestCase):
         self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5,6],self.color2)
         self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color2)      
 
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                        "1DOWN" : self.Game.Player1.PileDOWN,
+                        "2UP" : self.Game.Player2.PileUP,
+                        "2DOWN" : self.Game.Player2.PileDOWN}
 
-        self.Game.Play(PileIndex[2],TheGame.Card(20,self.color2),'UP')
+
+        self.Game.Play('2UP',TheGame.Card(20,self.color2),PlayerSelected)
         self.assertListEqual(self.Game.Player2.hand,TheGame.CreateListOfCards([34,36,38,49,57],self.color2))
-        self.assertListEqual(self.Game.Player2.PileUP,TheGame.CreateListOfCards([1,5,6,20],self.color2))
+        self.assertListEqual(self.Game.Piles['2UP'],TheGame.CreateListOfCards([1,5,6,20],self.color2))
 
         self.Game.ActivePlayer = 1
-        self.Game.Play(PileIndex[1],TheGame.Card(57,self.color1),'DOWN') # won't work
-        self.Game.Play(PileIndex[1],TheGame.Card(47,self.color1),'DOWN')
-        self.Game.Play(PileIndex[1],TheGame.Card(57,self.color1),'DOWN')
+        PlayerSelected = 1
+
+        self.Game.Play('1DOWN',TheGame.Card(57,self.color1),PlayerSelected) # won't work
+        self.Game.Play('1DOWN',TheGame.Card(47,self.color1),PlayerSelected)
+        self.Game.Play('1DOWN',TheGame.Card(57,self.color1),PlayerSelected)
         self.assertListEqual(self.Game.Player1.hand,TheGame.CreateListOfCards([2,14,16,18],self.color1))
-        self.assertListEqual(self.Game.Player1.PileDOWN,TheGame.CreateListOfCards([60,51,47,57],self.color1))
+        self.assertListEqual(self.Game.Piles['1DOWN'],TheGame.CreateListOfCards([60,51,47,57],self.color1))
+
 
     def test_Concede(self):
 
         self.Game = TheGame.Game()
-        self.assertFalse(self.Game.P1GameOver)
-        self.assertFalse(self.Game.P2GameOver)
+        self.assertFalse(self.Game.Player1.GameOver)
+        self.assertFalse(self.Game.Player2.GameOver)
+
 
         self.Game.Concede()
-        self.assertTrue(self.Game.P1GameOver)
-        self.assertFalse(self.Game.P2GameOver)
+        self.assertTrue(self.Game.Player1.GameOver)
+        self.assertFalse(self.Game.Player2.GameOver)
+
 
         self.Game.ActivePlayer = 2
         self.Game.Concede()
-        self.assertTrue(self.Game.P1GameOver)
-        self.assertTrue(self.Game.P2GameOver)
+        self.assertTrue(self.Game.Player1.GameOver)
+        self.assertTrue(self.Game.Player2.GameOver)
 
     def test_ChangeActivePlayer(self):
 
@@ -310,10 +353,11 @@ class GameTest(unittest.TestCase):
         self.assertListEqual(self.Game.Player2.deck,TheGame.CreateListOfCards([5,32,9],self.color2))
 
     def test_HasTheRightToEndTurn(self):
-        PileIndex = ["False",1,2]
+
         self.Game = TheGame.Game()
 
         self.Game.ActivePlayer = 2
+        PlayerSelected = 2
 
         self.Game.Player1.hand = TheGame.CreateListOfCards([2,14,16,18,47,57],self.color1)
         self.Game.Player2.hand = TheGame.CreateListOfCards([20,34,36,38,49,57],self.color2)
@@ -323,10 +367,10 @@ class GameTest(unittest.TestCase):
         self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color2)      
 
 
-        self.Game.Play(PileIndex[2],TheGame.Card(20,self.color2),'UP')
+        self.Game.Play('2UP',TheGame.Card(20,self.color2),PlayerSelected)
         self.assertEqual(self.Game.HasTheRightToEndTurn(),0)
 
-        self.Game.Play(PileIndex[2],TheGame.Card(34,self.color2),'UP')
+        self.Game.Play('2UP',TheGame.Card(34,self.color2),PlayerSelected)
         self.assertEqual(self.Game.HasTheRightToEndTurn(),1)        
 
     def test_EndOfTurn(self):
@@ -380,6 +424,130 @@ class GameTest(unittest.TestCase):
 
         self.Game.Player1.hand = []
         self.assertEqual(self.Game.EndOfTurn(),1)
-        self.assertTrue(self.Game.P2GameOver)
+        self.assertTrue(self.Game.Player2.GameOver)
 
-        
+    def test_CheckIfLoose(self):
+        # TODO THIS TEST MUST BE PERFECT FOR THE IMPLEMENTATION FO THE RL ALGORITHM
+        # 2 things to check : that it is exact (no FP or FN) : 
+        #                   : that it doesn't impact the game after except for the value of Playern.Gameover: DONE
+
+        self.Game = TheGame.Game()
+
+        self.Game.ActivePlayer = 1
+        PlayerSelected = 1
+
+        # obvious case with cards only in the overlap interval : 
+        # the test case where player 1 cannot play on his own piles (not even 1 card)
+        self.Game.Player1.hand = TheGame.CreateListOfCards([32,34,36,38,37,35],self.color1)
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,40],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,30],self.color1) 
+        print(self.Game.Player2.PileDOWN)
+        print(self.Game.Piles['2DOWN'])
+
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                        "1DOWN" : self.Game.Player1.PileDOWN,
+                        "2UP" : self.Game.Player2.PileUP,
+                        "2DOWN" : self.Game.Player2.PileDOWN}
+
+        self.assertTrue(self.Game.CheckIfLoose(PlayerSelected))
+        self.assertTrue(self.Game.Player1.GameOver)     
+
+        self.assertEqual(self.Game.Player1.hand,TheGame.CreateListOfCards([32,34,36,38,37,35],self.color1))
+
+        #reset the Gameover for the player 1
+        self.Game.Player1.GameOver = False
+
+        # a bit less obvious case : 
+        # the test case where player 1 cannot ( play 2 cards on his own piles AND cannot play 1 card on oppo piles)        
+        self.Game.Player1.hand = TheGame.CreateListOfCards([8,17,19,38,39,43],self.color1)
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,44],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,16],self.color1) 
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,8],self.color2)
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,43],self.color2) 
+
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                        "1DOWN" : self.Game.Player1.PileDOWN,
+                        "2UP" : self.Game.Player2.PileUP,
+                        "2DOWN" : self.Game.Player2.PileDOWN}
+
+        self.assertTrue(self.Game.CheckIfLoose(PlayerSelected))
+        self.assertTrue(self.Game.Player1.GameOver)    
+
+        #reset the Gameover for the player 1
+        self.Game.Player1.GameOver = False
+
+        # a bit less obvious case with cards only in the overlap interval except for 1 
+        # it will be 1 card on the personal piles + 1 card on the oppo piles
+        self.Game.Player1.hand = TheGame.CreateListOfCards([32,15,36,38,37,35],self.color1)
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,40],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,30],self.color1) 
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,8],self.color2)
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,37],self.color2) 
+
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                        "1DOWN" : self.Game.Player1.PileDOWN,
+                        "2UP" : self.Game.Player2.PileUP,
+                        "2DOWN" : self.Game.Player2.PileDOWN}
+
+        self.assertFalse(self.Game.CheckIfLoose(PlayerSelected))
+        self.assertFalse(self.Game.Player1.GameOver)  
+
+        # checks that the game state hasn't changed
+        self.assertEqual(self.Game.Player1.hand,TheGame.CreateListOfCards([32,15,36,38,37,35],self.color1))
+        self.assertEqual(self.Game.Player1.PileUP,TheGame.CreateListOfCards([1,40],self.color1))
+        self.assertEqual(self.Game.Player1.PileDOWN,TheGame.CreateListOfCards([60,30],self.color1))
+        self.assertEqual(self.Game.Player2.PileUP,TheGame.CreateListOfCards([1,8],self.color2))
+        self.assertEqual(self.Game.Player2.PileDOWN,TheGame.CreateListOfCards([60,37],self.color2))
+
+        #reset the Gameover for the player 1
+        self.Game.Player1.GameOver = False
+
+        self.Game.ActivePlayer = 2
+        PlayerSelected = 2
+
+        # test for player 2
+        # a bit less obvious case with cards only in the overlap interval except for 1 
+        # it will be 1 card on the personal piles + 1 card on the oppo piles
+        self.Game.Player2.hand = TheGame.CreateListOfCards([32,39,36,38,37,35],self.color2)
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,49],self.color2)
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,30],self.color2) 
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,8],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,37],self.color1) 
+
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                        "1DOWN" : self.Game.Player1.PileDOWN,
+                        "2UP" : self.Game.Player2.PileUP,
+                        "2DOWN" : self.Game.Player2.PileDOWN}
+
+        self.assertFalse(self.Game.CheckIfLoose(PlayerSelected))
+        self.assertFalse(self.Game.Player2.GameOver)  
+
+    def test_Undo(self):
+
+        self.Game = TheGame.Game()
+
+        self.Game.ActivePlayer = 1
+        PlayerSelected = 1
+
+        self.Game.Player1.hand = TheGame.CreateListOfCards([2,14,16,18,47,57],self.color1)
+        self.Game.Piles['1UP'] = TheGame.CreateListOfCards([1,13],self.color1)
+        self.Game.Piles['1DOWN'] = TheGame.CreateListOfCards([60,51],self.color1)
+        self.Game.Piles['2UP'] = TheGame.CreateListOfCards([1,5,6],self.color2)
+        self.Game.Piles['2DOWN'] = TheGame.CreateListOfCards([60,53,49],self.color2)    
+        self.Game.Player1.PileUP =   self.Game.Piles['1UP']
+        self.Game.Player1.PileDOWN =   self.Game.Piles['1DOWN']
+        self.Game.Player2.PileUP =   self.Game.Piles['2UP']
+        self.Game.Player2.PileDOWN =   self.Game.Piles['2DOWN']
+
+
+        self.Game.Play('1UP',TheGame.Card(14,self.Game.color1),PlayerSelected)
+        self.Game.Play('1UP',TheGame.Card(16,self.Game.color1),PlayerSelected)
+        print(self.Game.PlayedThisTurnPlayer1)
+        self.assertEqual(self.Game.PlayedThisTurnPlayer1, [(TheGame.Card(14, 'Gold'), '1UP'), (TheGame.Card(16, 'Gold'), '1UP')])
+        self.assertEqual(self.Game.Player1.hand,TheGame.CreateListOfCards([2,18,47,57],self.color1))
+        self.Game.Undo()
+        self.assertEqual(self.Game.Player1.hand,TheGame.CreateListOfCards([2,18,47,57,16],self.color1))
+        self.assertEqual(self.Game.PlayedThisTurnPlayer1, [(TheGame.Card(14, 'Gold'), '1UP')])
+        self.Game.Undo()
+        self.assertEqual(self.Game.Player1.hand,TheGame.CreateListOfCards([2,18,47,57,16,14],self.color1))
+        self.assertEqual(self.Game.PlayedThisTurnPlayer1,[])

@@ -4,6 +4,7 @@ import select
 import random
 import pygame
 from pygame.locals import *
+from pygame import key
 import TheGame
 
 
@@ -52,7 +53,8 @@ class GameClient:
 			return ListOfCards
 
 	def run(self):
-		running = (not self.game.P1GameOver) and (not self.game.P2GameOver)
+
+		running = True
 
 		mousex = 0 # used to store x coordinate of mouse event
 		mousey = 0 # used to store y coordinate of mouse event
@@ -64,8 +66,8 @@ class GameClient:
 		# First screen of Player selection
 		while not Selection:
 			self.game.DISPLAYSURF.blit(self.game.Images["BGsurface"], (0,0))
-			Player1Box = self.game.DISPLAYSURF.blit(self.game.Images["Player1Img"], (0.3*self.game.WINDOWWIDTH,0.45*self.game.WINDOWHEIGHT))
-			Player2Box = self.game.DISPLAYSURF.blit(self.game.Images["Player2Img"], (0.5*self.game.WINDOWWIDTH,0.45*self.game.WINDOWHEIGHT))
+			Player1Box = self.game.DISPLAYSURF.blit(self.game.Images["Player1Img"], (int(0.3*self.game.WINDOWWIDTH),int(0.45*self.game.WINDOWHEIGHT)))
+			Player2Box = self.game.DISPLAYSURF.blit(self.game.Images["Player2Img"], (int(0.5*self.game.WINDOWWIDTH),int(0.45*self.game.WINDOWHEIGHT)))
 
 			for event in pygame.event.get(): # event handling loop
 				if event.type == pygame.VIDEORESIZE: # resize
@@ -118,7 +120,11 @@ class GameClient:
 							self.game.Player1.PileUP = self.Decode(PileUP1)
 							self.game.Player1.PileDOWN = self.Decode(PileDN1)
 							self.game.Player2.PileUP = self.Decode(PileUP2)
-							self.game.Player2.PileDOWN = self.Decode(PileDN2)											
+							self.game.Player2.PileDOWN = self.Decode(PileDN2)	
+							self.game.Piles = {"1UP" : self.game.Player1.PileUP,
+											   "1DOWN" : self.game.Player1.PileDOWN,
+											   "2UP" : self.game.Player2.PileUP,
+											   "2DOWN" : self.game.Player1.PileDOWN}										
 							NotSU2 = False
 			# the game
 			while running:
@@ -140,13 +146,14 @@ class GameClient:
 							cmd = msg[0:3]
 							msg = msg[3:]					
 
-						if cmd == "PLC":  # PLay a Card
+						if cmd == "PLC":  # Play a Card
 
-							PileIndex,CardStr,PileName = msg.split(";")
+							Pile,CardStr,CurrentPlayerSelected = msg.split(";")
 							Card = self.Decode(CardStr)[0]
-							self.game.Play(int(PileIndex),Card,PileName)
+							self.game.Play(Pile,Card,int(CurrentPlayerSelected))
 
 							# message to check piles, hand and deck
+							# TODO might be a problem if the len is 0
 							LenghtHands = len(self.game.Player1.hand)*len(self.game.Player2.hand)
 							LenghtDecks = len(self.game.Player1.deck)*len(self.game.Player2.deck)
 							if LenghtDecks*LenghtHands > 0 :
@@ -171,6 +178,20 @@ class GameClient:
 						elif cmd == "CAP": # Change ActivePlayer
 
 							self.game.ChangeActivePlayer()
+							if self.game.ActivePlayer == PlayerSelected:
+
+								# returns True if the player has lost the game
+								if self.game.CheckIfLoose(PlayerSelected):
+									self.conn.sendto(("GMO"+str(1)).encode(), (self.addr, self.serverport))
+
+						elif cmd == "GMO" :
+							if msg == "1":
+								self.game.Player1.GameOver = True
+							elif msg == "2":
+								self.game.Player2.GameOver = True	
+
+						elif cmd == "UND":
+							self.game.Undo()													 
 
 						elif cmd == 'UPD' : 
 
@@ -190,6 +211,7 @@ class GameClient:
 				(PileDownAP,PileUPAP,PileDownNAP,PileUPNAP,APDeck,NAPDeck) = self.game.DrawBoard(PlayerSelected)
 
 				for event in pygame.event.get(): # event handling loop
+					mod = key.get_mods()
 					if event.type == pygame.VIDEORESIZE: # resize
 						self.game.DISPLAYSURF = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
 						self.game.DefineSizes()
@@ -210,12 +232,29 @@ class GameClient:
 					elif event.type == MOUSEBUTTONDOWN and event.button == 1 :
 						mousex, mousey = event.pos
 						mouseClicked = True
+					elif event.type == KEYDOWN and mod and KMOD_CTRL : # event.type == KEYDOWN and event.unicode == 'a':
+						if event.type == KEYDOWN and event.key ==  K_w : # we want the azerty for z: event.unicode == 'a' a in 
+							# send the undo command
+							self.conn.sendto(("UND").encode(), (self.addr, self.serverport))
+ 
 					
 				
 				self.game.DisplayActivePlayer()  
 				self.game.OnACard(mousex,mousey,PlayerSelected)
-				boxRectEOT = self.game.DISPLAYSURF.blit(self.game.Images["EndOfTurn"], (0.8*self.game.WINDOWWIDTH,0.45*self.game.WINDOWHEIGHT))
-				boxRectCONCEDE = self.game.DISPLAYSURF.blit(self.game.Images["Quit"], (0.8*self.game.WINDOWWIDTH,0))
+				boxRectEOT = self.game.DISPLAYSURF.blit(self.game.Images["EndOfTurn"], (int(0.8*self.game.WINDOWWIDTH),int(0.45*self.game.WINDOWHEIGHT)))
+				boxRectQUIT = self.game.DISPLAYSURF.blit(self.game.Images["Quit"], (int(0.8*self.game.WINDOWWIDTH),0))
+
+				if self.game.Player1.GameOver:
+					if PlayerSelected == 1:
+						self.game.DISPLAYSURF.blit(self.game.Images["YouLostGold"],(0,0))
+					if PlayerSelected == 2:
+						self.game.DISPLAYSURF.blit(self.game.Images["YouWonSilver"],(0,0))
+				if self.game.Player2.GameOver:
+					if PlayerSelected == 1:
+						self.game.DISPLAYSURF.blit(self.game.Images["YouWonGold"],(0,0))
+					if PlayerSelected == 2:
+						self.game.DISPLAYSURF.blit(self.game.Images["YouLostSilver"],(0,0))
+
 
 				# shows the number of cards of the players
 				if APDeck.collidepoint(mousex,mousey) :
@@ -244,23 +283,23 @@ class GameClient:
 					if self.game.ActivePlayer == 1 :# and self.game.ActivePlayer == PlayerSelected:
 						CardToPlay = self.game.Player1.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";DOWN").encode(),  (self.addr, self.serverport))
+							self.conn.sendto(("PLC1DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(),  (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 					if self.game.ActivePlayer == 2 :# and self.game.ActivePlayer == PlayerSelected:
 						CardToPlay = self.game.Player2.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";DOWN").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1;"+self.Encode([CardToPlay])+";UP").encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC1UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 
 				# EOT or concede block
 				if mouseClicked :
@@ -271,21 +310,21 @@ class GameClient:
 
 						GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
 						GraySurf.fill((150,150,150,150))
-						x0 = 0.2*self.game.WINDOWWIDTH
+						x0 = int(0.2*self.game.WINDOWWIDTH)
 						y0 = int((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2)
 
-						PileBoxSize = (0.6*self.game.WINDOWWIDTH,self.game.HEIGHTCARD)
+						PileBoxSize = (int(0.6*self.game.WINDOWWIDTH),int(self.game.HEIGHTCARD))
 						PileBox = pygame.draw.rect(self.game.DISPLAYSURF, self.game.Colors["GRAY"],
 							( x0, y0 , PileBoxSize[0] , PileBoxSize[1] ), 4)
 						self.game.DISPLAYSURF.blit(GraySurf, (0,0))
 
 						# create cursor surface and cursor:
 
-						SurfCursorSize = (0.4*self.game.WINDOWWIDTH, 0.033*self.game.WINDOWHEIGHT)
+						SurfCursorSize = (int(0.4*self.game.WINDOWWIDTH), int(0.033*self.game.WINDOWHEIGHT))
 						SurfCursor = pygame.Surface(SurfCursorSize, pygame.SRCALPHA)   # per-pixel alpha
 						SurfCursor.fill((40,40,40,255))
-						x0SurfCursor = 0.3*self.game.WINDOWWIDTH
-						y0SurfCursor = y0 + 1.5*self.game.HEIGHTCARD
+						x0SurfCursor = int(0.3*self.game.WINDOWWIDTH)
+						y0SurfCursor = int(y0 + 1.5*self.game.HEIGHTCARD)
 						SurfCursorBlit = self.game.DISPLAYSURF.blit(SurfCursor, (x0SurfCursor,y0SurfCursor))
 
 						pygame.draw.rect(self.game.DISPLAYSURF, self.game.Colors["GRAY"],
@@ -294,11 +333,11 @@ class GameClient:
 						# initialise cursor
 						
 						CursorPos = self.game.WINDOWWIDTH/2  # middle of cursor
-						CursorSize = (0.04*self.game.WINDOWWIDTH, 0.033*self.game.WINDOWHEIGHT)
+						CursorSize = (int(0.04*self.game.WINDOWWIDTH), int(0.033*self.game.WINDOWHEIGHT))
 
 						Cursor = pygame.Surface(CursorSize, pygame.SRCALPHA)   # per-pixel alpha
 						Cursor.fill((0,0,0,255))
-						CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (CursorPos-CursorSize[0]/2,y0 + 1.5*self.game.HEIGHTCARD))
+						CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(y0 + 1.5*self.game.HEIGHTCARD)))
 
 						CursorSelected = False
 
@@ -363,7 +402,7 @@ class GameClient:
 								pygame.draw.rect(self.game.DISPLAYSURF, self.game.Colors["GRAY"],
 								( x0SurfCursor, y0SurfCursor , SurfCursorSize[0],SurfCursorSize[1] ), 4)
 
-								CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (CursorPos-CursorSize[0]/2,y0 + 1.5*self.game.HEIGHTCARD))
+								CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(y0 + 1.5*self.game.HEIGHTCARD)))
 								
 								pygame.display.update()
 								self.game.clock.tick(self.game.FPS) 
@@ -419,7 +458,7 @@ class GameClient:
 								pygame.draw.rect(self.game.DISPLAYSURF, self.game.Colors["GRAY"],
 								( x0SurfCursor, y0SurfCursor , SurfCursorSize[0],SurfCursorSize[1] ), 4)
 
-								CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (CursorPos-CursorSize[0]/2,y0 + 1.5*self.game.HEIGHTCARD))
+								CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(y0 + 1.5*self.game.HEIGHTCARD)))
 								
 								pygame.display.update()
 								self.game.clock.tick(self.game.FPS) 
@@ -427,20 +466,18 @@ class GameClient:
 							pass
 						elif PileUPNAP.collidepoint(mousex,mousey): 
 							pass
-					elif boxRectCONCEDE.collidepoint(mousex,mousey):
-						self.game.Concede()
-						print('concede')
+					elif boxRectQUIT.collidepoint(mousex,mousey):
+						#self.game.Concede()
+						#print('concede')
 						break 
 					elif boxRectEOT.collidepoint(mousex,mousey):
 						if self.game.HasTheRightToEndTurn() == 1:
 							self.conn.sendto("EOT".encode(), (self.addr, self.serverport))
-						elif self.game.ActivePlayer != PlayerSelected:
-							None
-						else:
+						elif self.game.ActivePlayer == PlayerSelected and self.game.HasTheRightToEndTurn() ==0 :
 							GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
 							GraySurf.fill((150,150,150,150))
 							NotClickedOutEOTScreen = True
-							x0 = 0.1*self.game.WINDOWWIDTH
+							x0 = int(0.1*self.game.WINDOWWIDTH)
 							y0 = int(self.game.WINDOWHEIGHT/4)
 
 							self.game.DISPLAYSURF.blit(GraySurf, (0,0))
@@ -457,6 +494,89 @@ class GameClient:
 
 				pygame.display.update()
 				self.game.clock.tick(self.game.FPS)  
+
+
+			# One player has lost the game 
+			if self.game.Player1.GameOver:
+				if PlayerSelected == 1:
+					# display you lost
+					GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
+					GraySurf.fill((150,150,150,150))
+					NotClickedOutYouLostGoldScreen = True
+					x0 = int((self.game.WINDOWWIDTH-0.1*self.game.WINDOWWIDTH)/2)
+					y0 = int((self.game.WINDOWHEIGHT-0.06*self.game.WINDOWHEIGHT)/2)
+
+					self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+					self.game.DISPLAYSURF.blit(self.game.Images["YouLostGold"], (x0,y0))
+
+					while NotClickedOutYouLostGoldScreen:
+
+						for event in pygame.event.get():
+							if event.type == MOUSEBUTTONDOWN and event.button == 1:
+								NotClickedOutYouLostGoldScreen = False
+
+						pygame.display.update()
+						self.game.clock.tick(self.game.FPS) 
+				if PlayerSelected == 2:
+					# display you won
+					GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
+					GraySurf.fill((150,150,150,150))
+					NotClickedOutYouWonSilverScreen = True
+					x0 = int((self.game.WINDOWWIDTH-0.1*self.game.WINDOWWIDTH)/2)
+					y0 = int((self.game.WINDOWHEIGHT-0.06*self.game.WINDOWHEIGHT)/2)
+
+					self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+					self.game.DISPLAYSURF.blit(self.game.Images["YouWonSilver"], (x0,y0))
+
+					while NotClickedOutYouWonSilverScreen:
+
+						for event in pygame.event.get():
+							if event.type == MOUSEBUTTONDOWN and event.button == 1:
+								NotClickedOutYouWonSilverScreen = False
+
+						pygame.display.update()
+						self.game.clock.tick(self.game.FPS) 
+			elif self.game.Player2.GameOver:
+				if PlayerSelected == 1:
+					# display you won
+					GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
+					GraySurf.fill((150,150,150,150))
+					NotClickedOutYouWonGoldScreen = True
+					x0 = int((self.game.WINDOWWIDTH-0.1*self.game.WINDOWWIDTH)/2)
+					y0 = int((self.game.WINDOWHEIGHT-0.06*self.game.WINDOWHEIGHT)/2)
+
+					self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+					self.game.DISPLAYSURF.blit(self.game.Images["YouWonGold"], (x0,y0))
+
+					while NotClickedOutYouWonGoldScreen:
+
+						for event in pygame.event.get():
+							if event.type == MOUSEBUTTONDOWN and event.button == 1:
+								NotClickedOutYouWonGoldScreen = False
+
+						pygame.display.update()
+						self.game.clock.tick(self.game.FPS) 
+				if PlayerSelected == 2:
+					# display you lost
+					GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
+					GraySurf.fill((150,150,150,150))
+					NotClickedOutYouLostSilverScreen = True
+					x0 = int((self.game.WINDOWWIDTH-0.1*self.game.WINDOWWIDTH)/2)
+					y0 = int((self.game.WINDOWHEIGHT-0.06*self.game.WINDOWHEIGHT)/2)
+
+					self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+					self.game.DISPLAYSURF.blit(self.game.Images["YouLostSilver"], (x0,y0))
+
+					while NotClickedOutYouLostSilverScreen:
+
+						for event in pygame.event.get():
+							if event.type == MOUSEBUTTONDOWN and event.button == 1:
+								NotClickedOutYouLostSilverScreen = False
+
+						pygame.display.update()
+						self.game.clock.tick(self.game.FPS) 			
+
+			
 		finally:
 			print("Quit")
 			self.conn.sendto("QUI".encode(), (self.addr, self.serverport))

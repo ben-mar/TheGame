@@ -131,9 +131,13 @@ class GameServer(object):
 					elif cmd == "PLC":  # PLay a Card
 						if self.players[addr][1] == self.game.ActivePlayer: # it it's the turn of the active player
 							print('do action')
-							PileIndex,CardStr,PileName = msg.split(";")
+							Pile,CardStr,CurrentPlayerSelected = msg.split(";")
+							print(Pile)
+							print(CurrentPlayerSelected)
+							print(self.game.ActivePlayer)
 							Card = self.Decode(CardStr)[0]
-							self.game.Play(int(PileIndex),Card,PileName)
+							print(Card)
+							self.game.Play(Pile,Card,int(CurrentPlayerSelected))
 							for addr in self.players:
 								self.listener.sendto((cmd + msg).encode(), addr)
 						else :
@@ -151,7 +155,25 @@ class GameServer(object):
 									msg += "|" +self.Encode(self.game.Player2.deck)
 									self.listener.sendto(msg.encode(), addrLoop) # Update Hands and deck
 						else :
-							print(" it's not the turn of the player {}".format(self.players[addr][1]))					
+							print(" it's not the turn of the player {}".format(self.players[addr][1]))		
+
+					elif cmd == "GMO": # GameOver for one of the players
+						if msg == "1":
+							self.game.P1GameOver = True
+							for addr in self.players:
+								self.listener.sendto((cmd + msg).encode(), addr)
+						elif msg == "2":
+							self.game.P2GameOver = True
+							for addr in self.players:
+								self.listener.sendto((cmd + msg).encode(), addr)
+
+					elif cmd == "UND":
+						print("Pile 1UP server",self.game.Piles['1UP'])
+						print("Player1.PileUP server",self.game.Player1.PileUP)
+						self.game.Undo()
+						for addr in self.players:
+							self.listener.sendto((cmd).encode(), addr)
+
 					elif cmd == "QUI":  # Player Quitting
 						if addr in self.players:
 							print('Player quitting')
