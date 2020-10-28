@@ -154,13 +154,80 @@ class GameTest(unittest.TestCase):
         self.color1 = 'Gold'
         self.color2 = 'Silver'
 
-    def test_deepcopy(self):
-        # todo
+    def test_DeepcopyForCheckIfLoose(self):
+
+        self.Game = TheGame.Game()
+        self.Game.DeepcopyForCheckIfLoose()
+
+        # we competely change the value of the 1UP pile and we insure the copy hasn't changed
+        self.Game.Player1.PileUP = []
+
+        self.assertEqual(self.Game.CopyPlayer1PileUP, TheGame.CreateListOfCards([1],self.color1))
+
+    def test_LoadDeepCopyForCheckIfLoose(self):
+
+        """
+        Here the test must ensure that the loaded copy can de changed without imacting the backup created by DeepcopyForCheckIfLoose
+        """
+
         self.Game = TheGame.Game()
 
-    def test_loaddeepcopy(self):
-        #todo
+        # let's modify the game state just a bit
+        self.Game.Player1.PileUP.append(TheGame.Card(number = 10, color = self.color1))
+        self.Game.DeepcopyForCheckIfLoose()
+
+        self.Game.LoadDeepCopyForCheckIfLoose()
+        self.assertEqual(self.Game.Piles['1UP'],TheGame.CreateListOfCards([1,10],self.color1))
+
+        self.Game.Player1.PileUP.append(TheGame.Card(number = 14, color = self.color1))
+
+        # we ensure the Pile has changed but not the backup
+        self.assertEqual(self.Game.Piles['1UP'],TheGame.CreateListOfCards([1,10,14],self.color1))
+        self.assertEqual(self.Game.CopyPlayer1PileUP,TheGame.CreateListOfCards([1,10],self.color1))
+
+    def test_rule(self):
+
         self.Game = TheGame.Game()
+
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,30],self.color1)
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5],self.color2) 
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53],self.color2)
+
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                            "1DOWN" : self.Game.Player1.PileDOWN,
+                            "2UP" : self.Game.Player2.PileUP,
+                            "2DOWN" : self.Game.Player2.PileDOWN}
+
+        self.assertTrue(self.Game.rule('1UP',TheGame.Card(3,'gold'),PlayOnHisOwnPile = True))
+        self.assertTrue(self.Game.rule('1UP',TheGame.Card(59,'gold'),PlayOnHisOwnPile = True))
+        self.assertFalse(self.Game.rule('1DOWN',TheGame.Card(56,'gold'),PlayOnHisOwnPile = True))
+        self.assertTrue(self.Game.rule('1DOWN',TheGame.Card(20,'gold'),PlayOnHisOwnPile = True))
+        self.assertTrue(self.Game.rule('1DOWN',TheGame.Card(40,'gold'),PlayOnHisOwnPile = True))
+        self.assertTrue(self.Game.rule('2UP',TheGame.Card(3,'gold'),PlayOnHisOwnPile = False))
+        self.assertFalse(self.Game.rule('2UP',TheGame.Card(6,'gold'),PlayOnHisOwnPile = False))
+        self.assertTrue(self.Game.rule('2DOWN',TheGame.Card(56,'gold'),PlayOnHisOwnPile = False))
+        self.assertFalse(self.Game.rule('2DOWN',TheGame.Card(52,'gold'),PlayOnHisOwnPile = False))
+
+
+        self.Game.Player1.PileUP = TheGame.CreateListOfCards([1,13],self.color1)
+        self.Game.Player1.PileDOWN = TheGame.CreateListOfCards([60,51],self.color1)
+        self.Game.Player2.PileUP = TheGame.CreateListOfCards([1,5,6],self.color2)
+        self.Game.Player2.PileDOWN = TheGame.CreateListOfCards([60,53,49],self.color2)
+        self.Game.Piles = {"1UP" : self.Game.Player1.PileUP,
+                    "1DOWN" : self.Game.Player1.PileDOWN,
+                    "2UP" : self.Game.Player2.PileUP,
+                    "2DOWN" : self.Game.Player2.PileDOWN}
+
+        self.assertTrue(self.Game.rule('1UP',TheGame.Card(3,'silver'),PlayOnHisOwnPile = False))
+        self.assertFalse(self.Game.rule('1UP',TheGame.Card(59,'gold'),PlayOnHisOwnPile = False))
+        self.assertTrue(self.Game.rule('1DOWN',TheGame.Card(56,'gold'),PlayOnHisOwnPile = False))
+        self.assertFalse(self.Game.rule('1DOWN',TheGame.Card(1,'gold'),PlayOnHisOwnPile = False))
+        self.assertFalse(self.Game.rule('2UP',TheGame.Card(3,'gold'),PlayOnHisOwnPile = True))
+        self.assertFalse(self.Game.rule('2UP',TheGame.Card(6,'gold'),PlayOnHisOwnPile = True))
+        self.assertTrue(self.Game.rule('2DOWN',TheGame.Card(59,'gold'),PlayOnHisOwnPile = True))
+        self.assertFalse(self.Game.rule('2DOWN',TheGame.Card(52,'gold'),PlayOnHisOwnPile = True))
+
 
     def test_checkAction(self):
 
@@ -177,7 +244,6 @@ class GameTest(unittest.TestCase):
                             "2DOWN" : self.Game.Player2.PileDOWN}
 
         PlayerSelected = 1
-        print()
 
         self.assertTrue(self.Game.CheckAction('1UP',TheGame.Card(3,'gold'),PlayerSelected))
         self.assertTrue(self.Game.CheckAction('1UP',TheGame.Card(59,'gold'),PlayerSelected))

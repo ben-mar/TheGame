@@ -194,11 +194,11 @@ class Game:
         self.PlayedThisTurnPlayer2 = []
 
         
-    def deepcopyForCheckIfLoose(self
+    def DeepcopyForCheckIfLoose(self
                                 ) -> None :
 
         """
-        Creates deepcopy of the piles and hands for the CheckIfLoose function to check all situations possible without impacting the real game
+        Creates deepcopy of the piles and hands for the CheckIfLoose function to check all situations possible without impacting the real game.
         """
 
         self.CopyPlayer1PileUP = copy.deepcopy(self.Player1.PileUP)
@@ -216,7 +216,11 @@ class Game:
                                     ) -> None :
 
         """
-        Load deepcopy made by the function : LoadDeepCopyForCheckIfLoose 
+        Load deepcopy made by the function : DeepCopyForCheckIfLoose 
+
+        The goal here is to load the backup lists and write on them without modifying the backup list.
+        This is why the shallow copy is performed, to have the possibility to update the loaded list without modifying the state of the Game 
+
         """
         self.Player1.PileUP = copy.copy(self.CopyPlayer1PileUP)
         self.Player1.PileDOWN = copy.copy(self.CopyPlayer1PileDOWN)
@@ -235,9 +239,9 @@ class Game:
 
 
     def rule(self,
+             Pile : str,
              card : Card,
              PlayOnHisOwnPile : bool,
-             Pile : str,
              verbosity = True
              ) -> bool :
 
@@ -284,7 +288,7 @@ class Game:
             else :
                 PlayOnHisOwnPile = False
 
-            return self.rule(card,PlayOnHisOwnPile,Pile,verbosity=verbosity)
+            return self.rule(Pile,card,PlayOnHisOwnPile,verbosity=verbosity)
 
         else :
             print("It's not your turn !")
@@ -457,7 +461,7 @@ class Game:
         It also returns True if the player has lost the game, False otherwise
         """
         PilesList = ['1UP','1DOWN','2UP','2DOWN']
-        self.deepcopyForCheckIfLoose() # we create the backup
+        self.DeepcopyForCheckIfLoose() # we create the backup
 
         if self.ActivePlayer == 1: # checks the play possibilities of the player 1
             for card in self.Player1.hand:
