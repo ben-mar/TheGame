@@ -132,12 +132,9 @@ class GameServer(object):
 						if self.players[addr][1] == self.game.ActivePlayer: # it it's the turn of the active player
 							print('do action')
 							Pile,CardStr,CurrentPlayerSelected = msg.split(";")
-							print(Pile)
-							print(CurrentPlayerSelected)
-							print(self.game.ActivePlayer)
 							Card = self.Decode(CardStr)[0]
-							print(Card)
 							self.game.Play(Pile,Card,int(CurrentPlayerSelected))
+							print(self.game.Piles)
 							for addr in self.players:
 								self.listener.sendto((cmd + msg).encode(), addr)
 						else :
@@ -168,8 +165,6 @@ class GameServer(object):
 								self.listener.sendto((cmd + msg).encode(), addr)
 
 					elif cmd == "UND":
-						print("Pile 1UP server",self.game.Piles['1UP'])
-						print("Player1.PileUP server",self.game.Player1.PileUP)
 						self.game.Undo()
 						for addr in self.players:
 							self.listener.sendto((cmd).encode(), addr)

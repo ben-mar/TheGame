@@ -124,7 +124,7 @@ class GameClient:
 							self.game.Piles = {"1UP" : self.game.Player1.PileUP,
 											   "1DOWN" : self.game.Player1.PileDOWN,
 											   "2UP" : self.game.Player2.PileUP,
-											   "2DOWN" : self.game.Player1.PileDOWN}										
+											   "2DOWN" : self.game.Player2.PileDOWN}										
 							NotSU2 = False
 			# the game
 			while running:
@@ -151,6 +151,7 @@ class GameClient:
 							Pile,CardStr,CurrentPlayerSelected = msg.split(";")
 							Card = self.Decode(CardStr)[0]
 							self.game.Play(Pile,Card,int(CurrentPlayerSelected))
+							print(self.game.Piles)
 
 							# message to check piles, hand and deck
 							# TODO might be a problem if the len is 0
@@ -293,7 +294,7 @@ class GameClient:
 					if self.game.ActivePlayer == 2 :# and self.game.ActivePlayer == PlayerSelected:
 						CardToPlay = self.game.Player2.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLC2DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
 							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
