@@ -113,6 +113,7 @@ class GameClient:
 							self.game.Player1.deck = self.Decode(Deck1)
 							self.game.Player2.hand = self.Decode(Hand2)
 							self.game.Player2.deck = self.Decode(Deck2)
+							self.game.Hands = {'P1' : self.game.Player1.hand, 'P2' : self.game.Player2.hand}
 							self.game.ActivePlayer = int(ActivePlayer)
 							NotSU1 = False
 						if cmd == 'SU2': # setup new player piles
@@ -121,10 +122,10 @@ class GameClient:
 							self.game.Player1.PileDOWN = self.Decode(PileDN1)
 							self.game.Player2.PileUP = self.Decode(PileUP2)
 							self.game.Player2.PileDOWN = self.Decode(PileDN2)	
-							self.game.Piles = {"1UP" : self.game.Player1.PileUP,
-											   "1DOWN" : self.game.Player1.PileDOWN,
-											   "2UP" : self.game.Player2.PileUP,
-											   "2DOWN" : self.game.Player2.PileDOWN}										
+							self.game.Piles = {"P1_UP" : self.game.Player1.PileUP,
+											   "P1_DOWN" : self.game.Player1.PileDOWN,
+											   "P2_UP" : self.game.Player2.PileUP,
+											   "P2_DOWN" : self.game.Player2.PileDOWN}									
 							NotSU2 = False
 			# the game
 			while running:
@@ -151,7 +152,6 @@ class GameClient:
 							Pile,CardStr,CurrentPlayerSelected = msg.split(";")
 							Card = self.Decode(CardStr)[0]
 							self.game.Play(Pile,Card,int(CurrentPlayerSelected))
-							print(self.game.Piles)
 
 							# message to check piles, hand and deck
 							# TODO might be a problem if the len is 0
@@ -245,12 +245,12 @@ class GameClient:
 				boxRectEOT = self.game.DISPLAYSURF.blit(self.game.Images["EndOfTurn"], (int(0.8*self.game.WINDOWWIDTH),int(0.45*self.game.WINDOWHEIGHT)))
 				boxRectQUIT = self.game.DISPLAYSURF.blit(self.game.Images["Quit"], (int(0.8*self.game.WINDOWWIDTH),0))
 
-				if self.game.Player1.GameOver:
+				if self.game.GameOver['P1']:
 					if PlayerSelected == 1:
 						self.game.DISPLAYSURF.blit(self.game.Images["YouLostGold"],(0,0))
 					if PlayerSelected == 2:
 						self.game.DISPLAYSURF.blit(self.game.Images["YouWonSilver"],(0,0))
-				if self.game.Player2.GameOver:
+				if self.game.GameOver['P2']:
 					if PlayerSelected == 1:
 						self.game.DISPLAYSURF.blit(self.game.Images["YouWonGold"],(0,0))
 					if PlayerSelected == 2:
@@ -284,23 +284,23 @@ class GameClient:
 					if self.game.ActivePlayer == 1 :# and self.game.ActivePlayer == PlayerSelected:
 						CardToPlay = self.game.Player1.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(),  (self.addr, self.serverport))
+							self.conn.sendto(("PLCP1_DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(),  (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP1_UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP2_DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP2_UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 					if self.game.ActivePlayer == 2 :# and self.game.ActivePlayer == PlayerSelected:
 						CardToPlay = self.game.Player2.hand[CardIndex]
 						if PileDownAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP2_DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC2UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP2_UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileDownNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP1_DOWN;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 						elif PileUPNAP.collidepoint(mousex,mousey):
-							self.conn.sendto(("PLC1UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+							self.conn.sendto(("PLCP1_UP;"+self.Encode([CardToPlay])+";"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 
 				# EOT or concede block
 				if mouseClicked :
@@ -498,7 +498,7 @@ class GameClient:
 
 
 			# One player has lost the game 
-			if self.game.Player1.GameOver:
+			if self.game.GameOver['P1']:
 				if PlayerSelected == 1:
 					# display you lost
 					GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
@@ -537,7 +537,7 @@ class GameClient:
 
 						pygame.display.update()
 						self.game.clock.tick(self.game.FPS) 
-			elif self.game.Player2.GameOver:
+			elif self.game.GameOver['P2']:
 				if PlayerSelected == 1:
 					# display you won
 					GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha

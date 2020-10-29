@@ -88,8 +88,6 @@ class Deck:
                other
                ) -> bool:
 
-        """Overrides the default implementation"""
-
         if isinstance(other, Deck):
             loop = 0
             SameCardNumber = True
@@ -128,18 +126,19 @@ class Player:
 
         self.color = color
         self.size = size
-        self.deckInstance = Deck(size,self.color)
+        self.deckInstance = Deck(self.size,self.color) # in order to be able to shuffle the deck
         self.deck = self.deckInstance.deck
         self.PileUP = [Card(number = 1, color = self.color)]
         self.PileDOWN = [Card(number = self.size, color = self.color)]
-        self.HandInstance = Hand([],self.color)
-        self.hand = self.HandInstance.hand
-        self.PlayedOnOpponnentPiles = False
-        self.GameOver = False
+        HandInstance = Hand([],self.color)
+        self.hand = HandInstance.hand
+        #self.PlayedOnOpponnentPiles = False
+        #self.GameOver = False
         
 
     def EmptyPiles(self
                    ) -> None :
+
         self.PileUP = [Card(number = 1, color = self.color)]
         self.PileDOWN = [Card(number = self.size, color = self.color)]
 
@@ -181,17 +180,15 @@ class Game:
         self.Player1.setup()
         self.Player2.setup()
 
-        self.Piles = {"1UP" : self.Player1.PileUP,
-                    "1DOWN" : self.Player1.PileDOWN,
-                    "2UP" : self.Player2.PileUP,
-                    "2DOWN" : self.Player2.PileDOWN}
+        self.Piles = {"P1_UP" : self.Player1.PileUP,
+                    "P1_DOWN" : self.Player1.PileDOWN,
+                    "P2_UP" : self.Player2.PileUP,
+                    "P2_DOWN" : self.Player2.PileDOWN}
 
-        self.PlayedOnOpponnentPiles = [False,False]
-        self.PlayedOnOpponnentPilesPlayer1 = self.PlayedOnOpponnentPiles[0]
-        self.PlayedOnOpponnentPilesPlayer2 = self.PlayedOnOpponnentPiles[1] 
-
-        self.PlayedThisTurnPlayer1 = []
-        self.PlayedThisTurnPlayer2 = []
+        self.Hands = {'P1' : self.Player1.hand, 'P2' : self.Player2.hand}
+        self.PlayedOnOpponnentPiles = {'P1' : False, 'P2' : False}
+        self.PlayedThisTurn = {'P1' : [], 'P2' : []}
+        self.GameOver = {'P1': False,'P2': False }
 
         
     def DeepcopyForCheckIfLoose(self
@@ -208,8 +205,7 @@ class Game:
         self.CopyPlayer2PileDOWN = copy.deepcopy(self.Player2.PileDOWN)
         self.CopyPlayer2Hand = copy.deepcopy(self.Player2.hand)
 
-        self.CopyPlayedThisTurnPlayer1 = copy.deepcopy(self.PlayedThisTurnPlayer1)
-        self.CopyPlayedThisTurnPlayer2 = copy.deepcopy(self.PlayedThisTurnPlayer2)
+        self.CopyPlayedThisTurn = copy.deepcopy(self.PlayedThisTurn)
         self.CopyPlayedOnOpponnentPiles = copy.deepcopy(self.PlayedOnOpponnentPiles)     
 
     def LoadDeepCopyForCheckIfLoose(self
@@ -228,13 +224,13 @@ class Game:
         self.Player2.PileUP = copy.copy(self.CopyPlayer2PileUP)
         self.Player2.PileDOWN = copy.copy(self.CopyPlayer2PileDOWN)
         self.Player2.hand = copy.copy(self.CopyPlayer2Hand)
-        self.Piles = {"1UP" : self.Player1.PileUP,
-                    "1DOWN" : self.Player1.PileDOWN,
-                    "2UP" : self.Player2.PileUP,
-                    "2DOWN" : self.Player2.PileDOWN}
+        self.Piles = {"P1_UP" : self.Player1.PileUP,
+                    "P1_DOWN" : self.Player1.PileDOWN,
+                    "P2_UP" : self.Player2.PileUP,
+                    "P2_DOWN" : self.Player2.PileDOWN}
+        self.Hands = {'P1' : self.Player1.hand, 'P2' : self.Player2.hand}
 
-        self.PlayedThisTurnPlayer1 = copy.copy(self.CopyPlayedThisTurnPlayer1)            
-        self.PlayedThisTurnPlayer2 = copy.copy(self.CopyPlayedThisTurnPlayer2)          
+        self.PlayedThisTurn = copy.copy(self.CopyPlayedThisTurn)        
         self.PlayedOnOpponnentPiles  = copy.copy(self.CopyPlayedOnOpponnentPiles)       
 
 
@@ -248,18 +244,18 @@ class Game:
         """
         Returns a bool corresponding to the rule applied according to the selected pile
         """
-        PileDirection = Pile[1:]
+        PileDirection = Pile[3:]
         if PlayOnHisOwnPile & (PileDirection == 'UP'):
             return (self.Piles[Pile][-1:][0].number < card.number ) or\
                    (self.Piles[Pile][-1:][0].number == card.number + 10)  
-        elif PlayOnHisOwnPile & (PileDirection == 'DOWN'):    
+        elif PlayOnHisOwnPile & (PileDirection == 'DOWN'):  
             return (self.Piles[Pile][-1:][0].number > card.number ) or\
                    (self.Piles[Pile][-1:][0].number == card.number - 10)    
-        elif (not PlayOnHisOwnPile) & (not self.PlayedOnOpponnentPiles[self.ActivePlayer-1]) & (PileDirection == 'UP'):   
+        elif (not PlayOnHisOwnPile) & (not self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)]) & (PileDirection == 'UP'):   
             return (self.Piles[Pile][-1:][0].number > card.number)
-        elif (not PlayOnHisOwnPile) & (not self.PlayedOnOpponnentPiles[self.ActivePlayer-1]) & (PileDirection == 'DOWN'):    
+        elif (not PlayOnHisOwnPile) & (not self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)]) & (PileDirection == 'DOWN'):    
             return (self.Piles[Pile][-1:][0].number < card.number)
-        elif self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:         
+        elif self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)]:         
             if verbosity:
                 print("Player {} has already played on opponents piles this turn !".format(self.ActivePlayer))
             return False
@@ -283,7 +279,7 @@ class Game:
             # should take into account the color of cards with the active player: on peut paos mettre une carte Silver si on est le joueur 1 puisqu'on est le joueur Gold !!!
             #assert(card.color == )
 
-            if self.ActivePlayer == int(Pile[0]):
+            if self.ActivePlayer == int(Pile[1]):
                 PlayOnHisOwnPile = True
             else :
                 PlayOnHisOwnPile = False
@@ -292,6 +288,7 @@ class Game:
 
         else :
             print("It's not your turn !")
+            return False
     
     def Put(self,
             Pile: str,
@@ -301,12 +298,12 @@ class Game:
 
         # TODO change related to color of the card you're trying to put !!
         if self.CheckAction(Pile,card,PlayerSelected,verbosity=True):
-            if self.ActivePlayer != int(Pile[0]):
-                self.PlayedOnOpponnentPiles[self.ActivePlayer-1] = True
+            if self.ActivePlayer != int(Pile[1]):
+                self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)] = True
             self.Piles[Pile].append(card) 
             return 0
         else:
-            print('Not possible to Put number {} on the Pile {} of the player {}'.format(card.number,Pile[1:],Pile[0]))
+            print('Not possible to Put number {} on the Pile {} of the player {}'.format(card.number,Pile[3:],Pile[1]))
             return 1
 
     def Play(self,
@@ -319,86 +316,78 @@ class Game:
         This function plays the card "card" on the pile "PileName"
         """
 
-        if self.ActivePlayer == 1:
-            if card in self.Player1.hand :
-                err = self.Put(Pile,card,PlayerSelected)
-                if err == 0 :
-                    self.Player1.hand.remove(card)
-                    self.PlayedThisTurnPlayer1.append((card,Pile))
-                    if verbosity:
-                        print('Played !')
-        elif self.ActivePlayer == 2:
-            if card in self.Player2.hand :
-                err = self.Put(Pile,card,PlayerSelected)
-                if err == 0 :
-                    self.Player2.hand.remove(card)      
-                    self.PlayedThisTurnPlayer2.append((card,Pile))  
-                    if verbosity:   
-                        print('Played !')
+        if card in self.Hands['P' + str(self.ActivePlayer)] :
+            err = self.Put(Pile,card,PlayerSelected)
+            if err == 0 :
+                self.Hands['P' + str(self.ActivePlayer)].remove(card)
+                self.PlayedThisTurn['P' + str(self.ActivePlayer)].append((card,Pile))
+                if verbosity:
+                    print('Played !')
+            else:
+                print('Not Played')
+        else:
+            print('Not in hand !')
+
 
     def Concede(self
                 ) -> None :
 
         if self.ActivePlayer == 1 :
-            self.Player1.GameOver = True
-        elif self.ActivePlayer == 2 :
-            self.Player2.GameOver = True
+            self.GameOver['P1'] = True
+        else :
+            self.GameOver['P2'] = True
 
     def ChangeActivePlayer(self
                            ) -> None :
 
         if self.ActivePlayer == 1 :
             self.ActivePlayer = 2
-        elif self.ActivePlayer == 2 :
+        else :
             self.ActivePlayer = 1
+
     
     def DrawEndOfTurn(self
                       ) -> None :
 
         if self.ActivePlayer == 1 :
-            if self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
-                CardsInHandPlayer1 = len(self.Player1.hand)
+            if self.PlayedOnOpponnentPiles['P'+str(self.ActivePlayer)]:
+                CardsInHandPlayer1 = len(self.Hands['P1'])
                 self.Player1.Draw(6-CardsInHandPlayer1)
             else :
                 self.Player1.Draw(2)
         elif self.ActivePlayer == 2 :
-            if self.PlayedOnOpponnentPiles[self.ActivePlayer-1]:
-                CardsInHandPlayer2 = len(self.Player2.hand)
+            if self.PlayedOnOpponnentPiles['P'+str(self.ActivePlayer)]:
+                CardsInHandPlayer2 = len(self.Hands['P2'])
                 self.Player2.Draw(6-CardsInHandPlayer2)
             else :
                 self.Player2.Draw(2)
+        else :
+            print("Pb : ActivePlayer = ",self.ActivePlayer )
 
     def HasTheRightToEndTurn(self
                              ) -> int :
 
-        if self.ActivePlayer == 1:
-            if len(self.PlayedThisTurnPlayer1) < 2:
-                return 0 
-            else:
-                return 1
-        if self.ActivePlayer == 2:
-            if len(self.PlayedThisTurnPlayer2) < 2:
-                return 0 
-            else:
-                return 1
+        if len(self.PlayedThisTurn['P'+str(self.ActivePlayer)]) < 2:
+            return 0 
+        else:
+            return 1
+
 
     def EndOfTurn(self
                   ) -> int :
 
         if self.HasTheRightToEndTurn() == 1: 
-            self.PlayedThisTurnPlayer1 = []
-            self.PlayedThisTurnPlayer2 = []
-            if (self.Player1.deck == []) and (self.Player1.hand == []):
-                self.Player2.GameOver = True # The Player 1 has won the game
-            elif (self.Player2.deck == []) and (self.Player2.hand == []):
-                self.Player1.GameOver = True # The Player 2 has won the game
-            Game.DrawEndOfTurn(self)
-            self.PlayedOnOpponnentPiles = [False,False]
-            Game.ChangeActivePlayer(self)
+            self.PlayedThisTurn = {'P1' : [], 'P2' : []}
+            if (self.Player1.deck == []) and (self.Hands['P1'] == []):
+                self.GameOver['P2'] = True # The Player 1 has won the game
+            elif (self.Player2.deck == []) and (self.Hands['P2'] == []):
+                self.GameOver['P1'] = True # The Player 2 has won the game
+            self.DrawEndOfTurn()
+            self.PlayedOnOpponnentPiles = {'P1' : False, 'P2' : False}
+            self.ChangeActivePlayer()
             return 1
         else:
             return 0
-
 
     def Display(self
                 ) -> None :
@@ -429,25 +418,16 @@ class Game:
         """
         undo the last action of playing a card
         """
-        if self.ActivePlayer == 1:
-            if len(self.PlayedThisTurnPlayer1) > 0:
-                LastPlayed = self.PlayedThisTurnPlayer1[-1]
-                LastPlayedPile = LastPlayed[1]
-                LastPlayedCard = LastPlayed[0]
-                self.Piles[LastPlayedPile].remove(LastPlayedCard)
 
-                self.PlayedThisTurnPlayer1.pop()
-                self.Player1.hand.append(LastPlayedCard)                
-                print('Undone !')
-        else:
-            if len(self.PlayedThisTurnPlayer2) > 0:
-                LastPlayed = self.PlayedThisTurnPlayer2[-1]
-                LastPlayedPile = LastPlayed[1]
-                LastPlayedCard = LastPlayed[0]
-                self.Piles[LastPlayedPile].remove(LastPlayedCard)
-                self.PlayedThisTurnPlayer2.pop()
-                self.Player2.hand.append(LastPlayedCard)
-                print('Undone !')
+        if len(self.PlayedThisTurn['P'+str(self.ActivePlayer)]) > 0:
+            LastPlayed = self.PlayedThisTurn['P'+str(self.ActivePlayer)][-1]
+            LastPlayedPile = LastPlayed[1]
+            LastPlayedCard = LastPlayed[0]
+            self.Piles[LastPlayedPile].remove(LastPlayedCard)
+
+            self.PlayedThisTurn['P'+str(self.ActivePlayer)].pop()
+            self.Hands['P'+str(self.ActivePlayer)].append(LastPlayedCard)                
+            print('Undone !')
 
     def CheckIfLoose(self,
                      PlayerSelected : int
@@ -460,45 +440,27 @@ class Game:
 
         It also returns True if the player has lost the game, False otherwise
         """
-        PilesList = ['1UP','1DOWN','2UP','2DOWN']
+
+        PilesList = ['P1_UP','P1_DOWN','P2_UP','P2_DOWN']
         self.DeepcopyForCheckIfLoose() # we create the backup
 
-        if self.ActivePlayer == 1: # checks the play possibilities of the player 1
-            for card in self.Player1.hand:
-                for pile in PilesList:
-                    self.LoadDeepCopyForCheckIfLoose() # we load the backup
-                    if self.CheckAction(pile,card,PlayerSelected,verbosity=False):
-                        self.Play(pile,card,PlayerSelected,verbosity=False)
-                        for card2 in self.Player1.hand:
-                            for pile2 in PilesList:                         
-                                if self.CheckAction(pile2,card2,PlayerSelected,verbosity=False):
-                                    # the player hasn't lost the game
-                                    self.LoadDeepCopyForCheckIfLoose()  
-                                    print("one possible play is : ",card.number," on pile ",pile[1:]," of player ",pile[0])
-                                    print("then : ",card2.number," on pile ",pile2[1:]," of player ",pile2[0])
-                                    return False
+        # checks the play possibilities of the ActivePlayer
+        for card in self.Hands['P' + str(self.ActivePlayer)]:
+            for pile in PilesList:
+                self.LoadDeepCopyForCheckIfLoose() # we load the backup
+                if self.CheckAction(pile,card,PlayerSelected,verbosity=False):
+                    self.Play(pile,card,PlayerSelected,verbosity=False)
+                    for card2 in self.Hands['P' + str(self.ActivePlayer)]:
+                        for pile2 in PilesList:                         
+                            if self.CheckAction(pile2,card2,PlayerSelected,verbosity=False):
+                                # the player hasn't lost the game
+                                self.LoadDeepCopyForCheckIfLoose()  
+                                print("one possible play is : ",card.number," on pile ",pile[3:]," of player ",pile[1])
+                                print("then : ",card2.number," on pile ",pile2[3:]," of player ",pile2[1])
+                                return False
 
-            self.Player1.GameOver = True
-            return True
-
-        else: # checks the play possibilities of the player 2
-            for card in self.Player2.hand:
-                for pile in PilesList:
-                    self.LoadDeepCopyForCheckIfLoose() # we load the backup
-                    if self.CheckAction(pile,card,PlayerSelected,verbosity=False):
-                        self.Play(pile,card,PlayerSelected,verbosity=False)
-                        for card2 in self.Player2.hand:
-                            for pile2 in PilesList:                         
-                                if self.CheckAction(pile2,card2,PlayerSelected,verbosity=False):
-                                    # the player hasn't lost the game
-                                    self.LoadDeepCopyForCheckIfLoose()  
-                                    print("One possible play is : ",card.number," on pile ",pile[1:]," of player ",pile[0])
-                                    print("followed by : ",card2.number," on pile ",pile2[1:]," of player ",pile2[0])
-                                    return False
-            
-            self.Player2.GameOver = True
-            return True
-
+        self.GameOver['P' + str(self.ActivePlayer)] = True
+        return True
    
 
 class TheGamePlay(Game):
