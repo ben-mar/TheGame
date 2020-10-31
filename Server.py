@@ -29,31 +29,86 @@ class GameServer(object):
 		self.players = {}
 
 	def Encode(self,
-			   ListOfCards: list
+			   objectToEncode,
+			   typeToEncode :str  = 'ListOfCards' 
 			   ) -> str:
-		# Encodes the messages
-		if ListOfCards == []:
-			return ''
-		else:
-			str_encoded = ''
-			for card in ListOfCards:
-				str_encoded += str(card.number)+'$'+card.color+';'
-			str_encoded = str_encoded.rstrip(';')
-			return(str_encoded)
+		
+		if typeToEncode == 'ListOfCards':
+			if not isinstance(objectToEncode, list):
+				raise("The ListOfCards for the encoding is not an list type !")
+			ListOfCards = objectToEncode	
+			# Encodes the messages
+			if ListOfCards == []:
+				return ''
+			else:
+				str_encoded = ''
+				for card in ListOfCards:
+					str_encoded += str(card.number)+'$'+card.color+';'
+				str_encoded = str_encoded.rstrip(';')
+				return(str_encoded)	
+
+		elif typeToEncode == 'Boolean':
+			if not isinstance(objectToEncode, bool):
+				raise("The Boolean for the encoding is not an bool type !")
+			boolean = objectToEncode
+			if boolean:
+				return "True"
+			else :
+				return "False"
+
+		elif typeToEncode == 'CoupleCardPile':
+			if not isinstance(objectToEncode, list):
+				raise("The CoupleCardPile for the encoding is not an list type !")			
+			CoupleCardPile = objectToEncode	
+			# Encodes the messages
+			if CoupleCardPile == []:
+				return ''
+			else:
+				str_encoded = ''
+				for couple in CoupleCardPile:
+					card, pile = couple
+					str_encoded += str(card.number)+'$'+card.color+'#'+pile+';'
+				str_encoded = str_encoded.rstrip(';')
+				return(str_encoded)	
+		else :
+			raise("Not treated yet, the typeToEncode is not correct ! : {}".format(typeToEncode))
 
 	def Decode(self,
-			   str_encoded: str
-			   ) -> list:
-		# Decodes the messages
-		ListOfCards = [] 
-		if str_encoded =='':
-			return ListOfCards
-		else:
-			spliting = str_encoded.split(';')
-			for encoded_card in spliting:
-				number,color = encoded_card.split('$') 
-				ListOfCards.append(TheGame.Card(int(number),color))
-			return ListOfCards
+			   objectToDecode : str,
+			   typeToDecode :str  = 'ListOfCards' 
+			   ):
+
+		if typeToDecode == 'ListOfCards':		
+			# Decodes the messages
+			ListOfCards = [] 
+			if objectToDecode =='':
+				return ListOfCards
+			else:
+				spliting = objectToDecode.split(';')
+				for encoded_card in spliting:
+					number,color = encoded_card.split('$') 
+					ListOfCards.append(TheGame.Card(int(number),color))
+				return ListOfCards
+
+		elif typeToDecode == 'Boolean':
+			if objectToDecode == "True":
+				return True
+			else :
+				return False
+		elif typeToDecode == 'CoupleCardPile':
+			ListOfCouples = [] 
+			if objectToDecode =='':
+				return ListOfCouples
+			else:
+				spliting = objectToDecode.split(';')
+				for encoded_couple in spliting:
+					encoded_card, pile = encoded_couple.split('#')
+					number,color = encoded_card.split('$') 
+					ListOfCouples.append((TheGame.Card(int(number),color),pile))
+				return ListOfCouples
+		else :
+			raise("Not treated yet, the typeToEncode is not correct ! : {}".format(typeToDecode))		
+		 
 
 	def setupNewPlayer(self,addr):
 
@@ -71,9 +126,23 @@ class GameServer(object):
 		msg2 += "|"+ self.Encode(self.game.Player2.PileUP)
 		msg2 += "|"+ self.Encode(self.game.Player2.PileDOWN)
 
+		# adds the Playedthisturn for both players : 
+		# In case one leaves the game, having already played something he can get back with the correct variable Playedthisturn
+		# SetUp3 : send the PlayedThisTurn, PlayedOnOpponnentPiles and GameOver variables
+
+		msg3 = "SU3" + self.Encode(self.game.PlayedThisTurn['P1'],typeToEncode='CoupleCardPile')
+		msg3 += "|"+ self.Encode(self.game.PlayedThisTurn['P2'],typeToEncode='CoupleCardPile')
+		msg3 += "|"+ self.Encode(self.game.PlayedOnOpponnentPiles['P1'],typeToEncode='Boolean')
+		msg3 += "|"+ self.Encode(self.game.PlayedOnOpponnentPiles['P2'],typeToEncode='Boolean')
+		msg3 += "|"+ self.Encode(self.game.GameOver['P1'],typeToEncode='Boolean')
+		msg3 += "|"+ self.Encode(self.game.GameOver['P2'],typeToEncode='Boolean')
+
+		
+		# verifier que t'as vraiment perdu quand l'algo te dit que t'as perdu (joué un 58 into j'ai perdu alors que non)
 
 		self.listener.sendto(msg.encode(), addr)
 		self.listener.sendto(msg2.encode(), addr)
+		self.listener.sendto(msg3.encode(), addr)
     
 	def run(self):
 		Running = True
@@ -155,14 +224,14 @@ class GameServer(object):
 							print(" it's not the turn of the player {}".format(self.players[addr][1]))		
 
 					elif cmd == "GMO": # GameOver for one of the players
-						if msg == "1":
-							self.game.P1GameOver = True
-							for addr in self.players:
-								self.listener.sendto((cmd + msg).encode(), addr)
-						elif msg == "2":
-							self.game.P2GameOver = True
-							for addr in self.players:
-								self.listener.sendto((cmd + msg).encode(), addr)
+						self.game.GameOver['P'+msg] = True
+						for addr in self.players:
+							self.listener.sendto((cmd + msg).encode(), addr)
+
+					elif cmd == "GMP": # UnGameOver for one of the players
+						self.game.GameOver['P'+msg] = False
+						for addr in self.players:
+							self.listener.sendto((cmd + msg).encode(), addr)					
 
 					elif cmd == "UND":
 						self.game.Undo()

@@ -26,31 +26,85 @@ class GameClient:
 		pygame.display.set_caption('The Game')
 
 	def Encode(self,
-			   ListOfCards: list
+			   objectToEncode,
+			   typeToEncode :str  = 'ListOfCards' 
 			   ) -> str:
-		# Encodes the messages
-		if ListOfCards == []:
-			return ''
-		else:
-			str_encoded = ''
-			for card in ListOfCards:
-				str_encoded += str(card.number)+'$'+card.color+';'
-			str_encoded = str_encoded.rstrip(';')
-			return(str_encoded)
+		
+		if typeToEncode == 'ListOfCards':
+			if not isinstance(objectToEncode, list):
+				raise("The ListOfCards for the encoding is not an list type !")
+			ListOfCards = objectToEncode	
+			# Encodes the messages
+			if ListOfCards == []:
+				return ''
+			else:
+				str_encoded = ''
+				for card in ListOfCards:
+					str_encoded += str(card.number)+'$'+card.color+';'
+				str_encoded = str_encoded.rstrip(';')
+				return(str_encoded)	
 
-	def Decode (self,
-				str_encoded: str
-				) -> list:
-		# Decodes the messages
-		ListOfCards = [] 
-		if str_encoded =='':
-			return ListOfCards
-		else:
-			spliting = str_encoded.split(';')
-			for encoded_card in spliting:
-				number,color = encoded_card.split('$') 
-				ListOfCards.append(TheGame.Card(int(number),color))
-			return ListOfCards
+		elif typeToEncode == 'Boolean':
+			if not isinstance(objectToEncode, bool):
+				raise("The Boolean for the encoding is not an bool type !")
+			boolean = objectToEncode
+			if boolean:
+				return "True"
+			else :
+				return "False"
+
+		elif typeToEncode == 'CoupleCardPile':
+			if not isinstance(objectToEncode, list):
+				raise("The CoupleCardPile for the encoding is not an list type !")			
+			CoupleCardPile = objectToEncode	
+			# Encodes the messages
+			if CoupleCardPile == []:
+				return ''
+			else:
+				str_encoded = ''
+				for couple in CoupleCardPile:
+					card, pile = couple
+					str_encoded += str(card.number)+'$'+card.color+'#'+pile+';'
+				str_encoded = str_encoded.rstrip(';')
+				return(str_encoded)	
+		else :
+			raise("Not treated yet, the typeToEncode is not correct ! : {}".format(typeToEncode))
+
+	def Decode(self,
+			   objectToDecode : str,
+			   typeToDecode :str  = 'ListOfCards' 
+			   ):
+
+		if typeToDecode == 'ListOfCards':		
+			# Decodes the messages
+			ListOfCards = [] 
+			if objectToDecode =='':
+				return ListOfCards
+			else:
+				spliting = objectToDecode.split(';')
+				for encoded_card in spliting:
+					number,color = encoded_card.split('$') 
+					ListOfCards.append(TheGame.Card(int(number),color))
+				return ListOfCards
+
+		elif typeToDecode == 'Boolean':
+			if objectToDecode == "True":
+				return True
+			else :
+				return False
+		elif typeToDecode == 'CoupleCardPile':
+			ListOfCouples = [] 
+			if objectToDecode =='':
+				return ListOfCouples
+			else:
+				spliting = objectToDecode.split(';')
+				for encoded_couple in spliting:
+					encoded_card, pile = encoded_couple.split('#')
+					number,color = encoded_card.split('$') 
+					ListOfCouples.append((TheGame.Card(int(number),color),pile))
+				return ListOfCouples
+		else :
+			raise("Not treated yet, the typeToEncode is not correct ! : {}".format(typeToDecode))	
 
 	def run(self):
 
@@ -96,7 +150,8 @@ class GameClient:
 			# setup of the piles
 			NotSU1 = True
 			NotSU2 = True
-			while NotSU1 or NotSU2 :
+			NotSU3 = True
+			while NotSU1 or NotSU2 or NotSU3:
 				readable, _, _ = (
 						select.select(self.read_list, self.write_list, [], 0)
 					)
@@ -127,6 +182,21 @@ class GameClient:
 											   "P2_UP" : self.game.Player2.PileUP,
 											   "P2_DOWN" : self.game.Player2.PileDOWN}									
 							NotSU2 = False
+						if cmd == 'SU3': # setup new PlayedThisTurn, PlayedOnOpponnentPiles and GameOver variables
+							PlayedThisTurnP1 ,PlayedThisTurnP2 ,\
+							PlayedOnOpponnentPilesP1, PlayedOnOpponnentPilesP2,\
+							GameOverP1, GameOverP2  = msg.split('|')
+
+							self.game.PlayedThisTurn['P1'] = self.Decode(PlayedThisTurnP1,typeToDecode='CoupleCardPile')
+							self.game.PlayedThisTurn['P2'] = self.Decode(PlayedThisTurnP2,typeToDecode='CoupleCardPile')
+							self.game.PlayedOnOpponnentPiles['P1'] = self.Decode(PlayedOnOpponnentPilesP1,typeToDecode='Boolean')
+							self.game.PlayedOnOpponnentPiles['P2'] = self.Decode(PlayedOnOpponnentPilesP2,typeToDecode='Boolean')
+							self.game.GameOver['P1'] = self.Decode(GameOverP1,typeToDecode='Boolean')
+							self.game.GameOver['P2'] = self.Decode(GameOverP2,typeToDecode='Boolean')
+							NotSU3 = False
+							# print(self.game.PlayedThisTurn)
+							# print(self.game.PlayedOnOpponnentPiles)
+							# print(self.game.GameOver)
 			# the game
 			while running:
 
@@ -172,6 +242,11 @@ class GameClient:
 								self.conn.sendto(msg.encode(), (self.addr, self.serverport))
 								self.conn.sendto(msg2.encode(), (self.addr, self.serverport))
 
+							# returns True if the player has lost the game
+							if self.game.ActivePlayer == PlayerSelected:
+								if self.game.CheckIfLoose(PlayerSelected):
+									self.conn.sendto(("GMO"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+
 						elif cmd == "EOT": # End Of Turn
 							
 							self.game.EndOfTurn()
@@ -183,16 +258,23 @@ class GameClient:
 
 								# returns True if the player has lost the game
 								if self.game.CheckIfLoose(PlayerSelected):
-									self.conn.sendto(("GMO"+str(1)).encode(), (self.addr, self.serverport))
+									self.conn.sendto(("GMO"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 
 						elif cmd == "GMO" :
-							if msg == "1":
-								self.game.Player1.GameOver = True
-							elif msg == "2":
-								self.game.Player2.GameOver = True	
+							self.game.GameOver['P'+msg] = True
+
+						elif cmd == "GMP" :
+							self.game.GameOver['P'+msg] = False
 
 						elif cmd == "UND":
-							self.game.Undo()													 
+							self.game.Undo()			
+
+							# returns True if the player has lost the game
+							if self.game.ActivePlayer == PlayerSelected:
+								if self.game.CheckIfLoose(PlayerSelected):
+									self.conn.sendto(("GMO"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
+								else :
+									self.conn.sendto(("GMP"+str(PlayerSelected)).encode(), (self.addr, self.serverport))
 
 						elif cmd == 'UPD' : 
 
@@ -201,6 +283,7 @@ class GameClient:
 							self.game.Player1.deck = self.Decode(Deck1)
 							self.game.Player2.hand = self.Decode(Hand2)
 							self.game.Player2.deck = self.Decode(Deck2)
+							self.game.Hands = {'P1' : self.game.Player1.hand, 'P2' : self.game.Player2.hand}
 
 
 				mouseClicked = False
@@ -234,7 +317,7 @@ class GameClient:
 						mousex, mousey = event.pos
 						mouseClicked = True
 					elif event.type == KEYDOWN and mod and KMOD_CTRL : # event.type == KEYDOWN and event.unicode == 'a':
-						if event.type == KEYDOWN and event.key ==  K_w : # we want the azerty for z: event.unicode == 'a' a in 
+						if event.type == KEYDOWN and event.key ==  K_w : # we want the azerty for z: event.unicode == 'a' a in
 							# send the undo command
 							self.conn.sendto(("UND").encode(), (self.addr, self.serverport))
  
@@ -248,11 +331,11 @@ class GameClient:
 				if self.game.GameOver['P1']:
 					if PlayerSelected == 1:
 						self.game.DISPLAYSURF.blit(self.game.Images["YouLostGold"],(0,0))
-					if PlayerSelected == 2:
-						self.game.DISPLAYSURF.blit(self.game.Images["YouWonSilver"],(0,0))
+					# if PlayerSelected == 2:
+					# 	self.game.DISPLAYSURF.blit(self.game.Images["YouWonSilver"],(0,0))
 				if self.game.GameOver['P2']:
-					if PlayerSelected == 1:
-						self.game.DISPLAYSURF.blit(self.game.Images["YouWonGold"],(0,0))
+					# if PlayerSelected == 1:
+					# 	self.game.DISPLAYSURF.blit(self.game.Images["YouWonGold"],(0,0))
 					if PlayerSelected == 2:
 						self.game.DISPLAYSURF.blit(self.game.Images["YouLostSilver"],(0,0))
 

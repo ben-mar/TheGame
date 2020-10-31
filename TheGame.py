@@ -132,8 +132,6 @@ class Player:
         self.PileDOWN = [Card(number = self.size, color = self.color)]
         HandInstance = Hand([],self.color)
         self.hand = HandInstance.hand
-        #self.PlayedOnOpponnentPiles = False
-        #self.GameOver = False
         
 
     def EmptyPiles(self
@@ -171,10 +169,13 @@ class Game:
                  ) -> None :
 
         self.size = 60
-        self.color1 = 'Gold'
-        self.color2 = 'Silver'
-        self.Player1 = Player(self.size,self.color1)
-        self.Player2 = Player(self.size,self.color2)
+        # self.color1 = 'Gold'
+        # self.color2 = 'Silver'
+        self.color = {'P1' : 'Gold', 'P2' : 'Silver'}
+        # self.Player1 = Player(self.size,self.color1)
+        # self.Player2 = Player(self.size,self.color2)
+        self.Player1 = Player(self.size,self.color['P1'])
+        self.Player2 = Player(self.size,self.color['P2'])
         self.ActivePlayer = 1
 
         self.Player1.setup()
@@ -230,9 +231,14 @@ class Game:
                     "P2_DOWN" : self.Player2.PileDOWN}
         self.Hands = {'P1' : self.Player1.hand, 'P2' : self.Player2.hand}
 
-        self.PlayedThisTurn = copy.copy(self.CopyPlayedThisTurn)        
-        self.PlayedOnOpponnentPiles  = copy.copy(self.CopyPlayedOnOpponnentPiles)       
 
+        # WARNING: However if the values associated with the dictionary keys are iterable objects,
+        #  such as lists for example, then if one of the dictionary is modified the other one will be too (it is called a shallow copy)
+        # This is why the copy is made key by key
+        self.PlayedThisTurn['P1'] = copy.copy(self.CopyPlayedThisTurn['P1'])
+        self.PlayedThisTurn['P2'] = copy.copy(self.CopyPlayedThisTurn['P2'])               
+        self.PlayedOnOpponnentPiles['P1']  = copy.copy(self.CopyPlayedOnOpponnentPiles['P1'])       
+        self.PlayedOnOpponnentPiles['P2']  = copy.copy(self.CopyPlayedOnOpponnentPiles['P2'])  
 
     def rule(self,
              Pile : str,
@@ -417,6 +423,7 @@ class Game:
 
         """
         undo the last action of playing a card
+        undo the played on opponenent piles, the card played and etc
         """
 
         if len(self.PlayedThisTurn['P'+str(self.ActivePlayer)]) > 0:
@@ -426,12 +433,15 @@ class Game:
             self.Piles[LastPlayedPile].remove(LastPlayedCard)
 
             self.PlayedThisTurn['P'+str(self.ActivePlayer)].pop()
-            self.Hands['P'+str(self.ActivePlayer)].append(LastPlayedCard)                
+            self.Hands['P'+str(self.ActivePlayer)].append(LastPlayedCard)
+            if LastPlayedCard.color != self.color[LastPlayedPile[:2]]:
+                self.PlayedOnOpponnentPiles['P'+str(self.ActivePlayer)] = False
+                print('Undo Played on oppo piles')                
             print('Undone !')
 
     def CheckIfLoose(self,
-                     PlayerSelected : int
-                     ) -> bool :
+                     PlayerSelected : int,
+                     verbosity = False) -> bool :
         """
         Tests all the play possibilities at the beginning of the turn
         and change the status of the variable Player.GameOver accordingly (becomes true if the player as indeed lost the game)
@@ -444,23 +454,48 @@ class Game:
         PilesList = ['P1_UP','P1_DOWN','P2_UP','P2_DOWN']
         self.DeepcopyForCheckIfLoose() # we create the backup
 
-        # checks the play possibilities of the ActivePlayer
-        for card in self.Hands['P' + str(self.ActivePlayer)]:
-            for pile in PilesList:
-                self.LoadDeepCopyForCheckIfLoose() # we load the backup
-                if self.CheckAction(pile,card,PlayerSelected,verbosity=False):
-                    self.Play(pile,card,PlayerSelected,verbosity=False)
-                    for card2 in self.Hands['P' + str(self.ActivePlayer)]:
-                        for pile2 in PilesList:                         
-                            if self.CheckAction(pile2,card2,PlayerSelected,verbosity=False):
-                                # the player hasn't lost the game
-                                self.LoadDeepCopyForCheckIfLoose()  
-                                print("one possible play is : ",card.number," on pile ",pile[3:]," of player ",pile[1])
-                                print("then : ",card2.number," on pile ",pile2[3:]," of player ",pile2[1])
-                                return False
+        # we have played no cards yet
+        if len(self.PlayedThisTurn['P' + str(self.ActivePlayer)]) == 0:
+            # checks the play possibilities of the ActivePlayer
+            for card in self.Hands['P' + str(self.ActivePlayer)]:
+                for pile in PilesList:
+                    self.LoadDeepCopyForCheckIfLoose() # we load the backup
+                    if self.CheckAction(pile,card,PlayerSelected,verbosity=False):
+                        self.Play(pile,card,PlayerSelected,verbosity=False)
+                        for card2 in self.Hands['P' + str(self.ActivePlayer)]:
+                            for pile2 in PilesList:                         
+                                if self.CheckAction(pile2,card2,PlayerSelected,verbosity=False):
+                                    # the player hasn't lost the game
+                                    self.LoadDeepCopyForCheckIfLoose()  
+                                    if verbosity:
+                                        print("one possible play is : ",card.number," on pile ",pile[3:]," of player ",pile[1])
+                                        print("then : ",card2.number," on pile ",pile2[3:]," of player ",pile2[1])
+                                    self.GameOver['P' + str(self.ActivePlayer)] = False
+                                    return False
 
-        self.GameOver['P' + str(self.ActivePlayer)] = True
-        return True
+            self.GameOver['P' + str(self.ActivePlayer)] = True
+            return True
+
+        # we have played 1 card yet, must take into account the played on oppo piles
+        elif len(self.PlayedThisTurn['P' + str(self.ActivePlayer)]) == 1:
+            # checks the play possibilities of the ActivePlayer
+            for card in self.Hands['P' + str(self.ActivePlayer)]:
+                for pile in PilesList:
+                    self.LoadDeepCopyForCheckIfLoose() # we load the backup
+                    if self.CheckAction(pile,card,PlayerSelected,verbosity=False):
+                        # the player hasn't lost the game
+                        self.LoadDeepCopyForCheckIfLoose()
+                        if verbosity:
+                            print("one possible play is : ",card.number," on pile ",pile[3:]," of player ",pile[1])
+                        self.GameOver['P' + str(self.ActivePlayer)] = False
+                        return False
+                                    
+
+            self.GameOver['P' + str(self.ActivePlayer)] = True
+            return True
+        # we already played at least 2 cards
+        else :
+            return False
    
 
 class TheGamePlay(Game):
