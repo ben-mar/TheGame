@@ -4,25 +4,14 @@ import select
 import TheGame
 
 
-# Messages:
-#  Client->Server
-#   Three characters minimum . Three first characters are the command:
-#     c: connect
-#     u: update position
-#     d: disconnect
-#   Second character only applies to position and specifies direction (udlr)
-#
-#  Server->Client
-#   '|' delimited pairs of positions to draw the players (there is no
-#     distinction between the players - not even the client knows where its
-#     player is.
 
 class GameServer(object):
 
-	def __init__(self, port=9009): # TODO the max_num_players = 2
+	def __init__(self,server = "192.168.1.6", port=9009): # TODO the max_num_players = 2
 		self.listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		# Bind to localhost - set to external ip to connect from other computers
-		self.listener.bind(("127.0.0.1", port))
+		# self.listener.listen(2)
+		self.listener.bind((server, port))
 		self.read_list = [self.listener]
 		self.write_list = []   
 		self.game = TheGame.Game()
@@ -203,7 +192,6 @@ class GameServer(object):
 							Pile,CardStr,CurrentPlayerSelected = msg.split(";")
 							Card = self.Decode(CardStr)[0]
 							self.game.Play(Pile,Card,int(CurrentPlayerSelected))
-							print(self.game.Piles)
 							for addr in self.players:
 								self.listener.sendto((cmd + msg).encode(), addr)
 						else :

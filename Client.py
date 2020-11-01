@@ -10,12 +10,12 @@ import TheGame
 
 class GameClient:
 
-	def __init__(self, addr="127.0.0.1", serverport=9009):
+	def __init__(self, addr="192.168.1.6", serverport=9009):
 		self.clientport = random.randrange(8000, 8999)
 		self.conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		# Bind to localhost - set to external ip to connect from other computers
-		self.conn.bind(("127.0.0.1", self.clientport))
 		self.addr = addr
+		self.conn.bind((self.addr, self.clientport))
 		self.serverport = serverport		
 		self.read_list = [self.conn]
 		self.write_list = []		
