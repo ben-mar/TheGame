@@ -33,11 +33,7 @@ class CardTest(unittest.TestCase):
 
         self.number4 = 15
         self.color4 = 'Silver'
-        self.card4 = TheGame.Card(self.number4,self.color4)
-
-        # self.number5 = '15'
-        # self.color5 = 'Silver'
-        # self.card5 = TheGame.Card(self.number5,self.color5)       
+        self.card4 = TheGame.Card(self.number4,self.color4)   
 
         self.assertNotEqual(self.card1,self.card2)
         self.assertNotEqual(self.card1,self.card3)
@@ -229,15 +225,24 @@ class GameTest(unittest.TestCase):
         self.assertEqual(self.Game.PlayedThisTurn,{'P1': [(TheGame.Card(36,'Silver'), 'P2_DOWN')], 'P2': []})  
 
 
+        self.Game.LoadDeepCopyForCheckIfLoose()
+        self.assertEqual(self.Game.Piles['P1_UP'],TheGame.CreateListOfCards([1,10],self.Game.color['P1']))
 
-        # self.Game.LoadDeepCopyForCheckIfLoose()
-        # self.assertEqual(self.Game.Piles['P1_UP'],TheGame.CreateListOfCards([1,10],self.Game.color['P1']))
+        self.Game.Piles['P1_UP'].append(TheGame.Card(number = 14, color = self.Game.color['P1']))
 
-        # self.Game.Piles['P1_UP'].append(TheGame.Card(number = 14, color = self.Game.color['P1']))
+        # we ensure the Pile has changed but not the backup
+        self.assertEqual(self.Game.Piles['P1_UP'],TheGame.CreateListOfCards([1,10,14],self.Game.color['P1']))
+        self.assertEqual(self.Game.CopyPlayer1PileUP,TheGame.CreateListOfCards([1,10],self.Game.color['P1']))
 
-        # # we ensure the Pile has changed but not the backup
-        # self.assertEqual(self.Game.Piles['P1_UP'],TheGame.CreateListOfCards([1,10,14],self.Game.color['P1']))
-        # self.assertEqual(self.Game.CopyPlayer1PileUP,TheGame.CreateListOfCards([1,10],self.Game.color['P1']))
+    def test_sort(self):
+
+        self.Game = TheGame.Game()   
+        self.PlayerSelected = 1
+        self.Game.Player1.hand = TheGame.CreateListOfCards([2,14,16,18,47,57],self.Game.color['P1'])    
+        self.Game.Hands = {'P1' : self.Game.Player1.hand, 'P2' : self.Game.Player2.hand}
+
+        self.Game.SortHand(2,TheGame.Card(57,self.Game.color['P1']),self.PlayerSelected)
+        self.assertEqual(self.Game.Hands['P1'],TheGame.CreateListOfCards([2,14,57,16,18,47],self.Game.color['P1'])   )
 
 
     def test_rule(self):
@@ -756,4 +761,4 @@ class GameTest(unittest.TestCase):
         self.Game.Undo()
         self.assertEqual(self.Game.Hands['P1'],TheGame.CreateListOfCards([2,14,18,47,16,57],self.Game.color['P1']))
         self.assertEqual(self.Game.PlayedThisTurn['P1'],[])
-        self.assertFalse(self.Game.PlayedOnOpponnentPiles['P1'])
+        self.assertFalse(self.Game.PlayedOnOpponnentPiles['P1'])        

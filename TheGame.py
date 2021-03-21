@@ -169,11 +169,7 @@ class Game:
                  ) -> None :
 
         self.size = 60
-        # self.color1 = 'Gold'
-        # self.color2 = 'Silver'
         self.color = {'P1' : 'Gold', 'P2' : 'Silver'}
-        # self.Player1 = Player(self.size,self.color1)
-        # self.Player2 = Player(self.size,self.color2)
         self.Player1 = Player(self.size,self.color['P1'])
         self.Player2 = Player(self.size,self.color['P2'])
         self.ActivePlayer = 1
@@ -187,6 +183,7 @@ class Game:
                     "P2_DOWN" : self.Player2.PileDOWN}
 
         self.Hands = {'P1' : self.Player1.hand, 'P2' : self.Player2.hand}
+        self.Decks = {'P1' : self.Player1.deck, 'P2' : self.Player2.deck}
         self.PlayedOnOpponnentPiles = {'P1' : False, 'P2' : False}
         self.PlayedThisTurn = {'P1' : [], 'P2' : []}
         self.GameOver = {'P1': False,'P2': False }
@@ -240,6 +237,18 @@ class Game:
         self.PlayedOnOpponnentPiles['P1']  = copy.copy(self.CopyPlayedOnOpponnentPiles['P1'])       
         self.PlayedOnOpponnentPiles['P2']  = copy.copy(self.CopyPlayedOnOpponnentPiles['P2'])  
 
+    def SortHand(self,
+                 index : int,
+                 CardToSort : Card,
+                 PlayerSelected : int
+                 ) -> None :
+        """
+        Sorts the hand
+        """
+
+        self.Hands['P'+str(PlayerSelected)].remove(CardToSort)
+        self.Hands['P'+str(PlayerSelected)].insert(index,CardToSort)
+
     def rule(self,
              Pile : str,
              card : Card,
@@ -252,15 +261,15 @@ class Game:
         """
         PileDirection = Pile[3:]
         if PlayOnHisOwnPile & (PileDirection == 'UP'):
-            return (self.Piles[Pile][-1:][0].number < card.number ) or\
-                   (self.Piles[Pile][-1:][0].number == card.number + 10)  
+            return (self.Piles[Pile][-1].number < card.number ) or\
+                   (self.Piles[Pile][-1].number == card.number + 10)  
         elif PlayOnHisOwnPile & (PileDirection == 'DOWN'):  
-            return (self.Piles[Pile][-1:][0].number > card.number ) or\
-                   (self.Piles[Pile][-1:][0].number == card.number - 10)    
+            return (self.Piles[Pile][-1].number > card.number ) or\
+                   (self.Piles[Pile][-1].number == card.number - 10)    
         elif (not PlayOnHisOwnPile) & (not self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)]) & (PileDirection == 'UP'):   
-            return (self.Piles[Pile][-1:][0].number > card.number)
+            return (self.Piles[Pile][-1].number > card.number)
         elif (not PlayOnHisOwnPile) & (not self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)]) & (PileDirection == 'DOWN'):    
-            return (self.Piles[Pile][-1:][0].number < card.number)
+            return (self.Piles[Pile][-1].number < card.number)
         elif self.PlayedOnOpponnentPiles['P' + str(self.ActivePlayer)]:         
             if verbosity:
                 print("Player {} has already played on opponents piles this turn !".format(self.ActivePlayer))
@@ -276,7 +285,7 @@ class Game:
                     ) -> bool :
         """
         Returns True if the rules allow ActivePlayer to put the card N° Number on PileName 'UP'/'DOWN' bellonging to player N° PileIndex
-        Returns False if not
+        Returns False if not.
         """
 
         # check if it's the turn of the  Active player
@@ -289,9 +298,7 @@ class Game:
                 PlayOnHisOwnPile = True
             else :
                 PlayOnHisOwnPile = False
-
             return self.rule(Pile,card,PlayOnHisOwnPile,verbosity=verbosity)
-
         else :
             print("It's not your turn !")
             return False
@@ -329,10 +336,13 @@ class Game:
                 self.PlayedThisTurn['P' + str(self.ActivePlayer)].append((card,Pile))
                 if verbosity:
                     print('Played !')
+                return True
             else:
                 print('Not Played')
+                return False
         else:
             print('Not in hand !')
+            return False
 
 
     def Concede(self
@@ -497,8 +507,7 @@ class Game:
         else :
             return False
    
-
-class TheGamePlay(Game):
+class GameFrontEnd(Game):
 
     def __init__(self,
                  width :int = 1280,
@@ -514,6 +523,12 @@ class TheGamePlay(Game):
         self.DefineSizes()
         self.DefineColors()
         self.DefineImages()
+
+        self.PlayerSelected = 0
+
+        self.HandsFrontEnd = {'P1' : copy.copy(self.Hands['P1']),
+                              'P2':  copy.copy(self.Hands['P2'])}
+        self.Moving = []
 
     def SetupPygame(self, 
                     width: int,
@@ -534,28 +549,28 @@ class TheGamePlay(Game):
 
         self.WINDOWWIDTH = self.DISPLAYSURF.get_width()
         self.WINDOWHEIGHT = self.DISPLAYSURF.get_height()
-        self.HEIGHTCARD = int(self.WINDOWHEIGHT/6)
+        #self.HEIGHTCARD = int(self.WINDOWHEIGHT/6)
+        self.HEIGHTCARD = int(self.WINDOWHEIGHT/7)
         self.WIDTHCARD = int(self.HEIGHTCARD*250/350)
-
-               
+         
     def DefineColors(self
                      ) -> None :
 
                             #            R    G    B
-        self.Colors = { "GRAY"     : (100, 100, 100),
-                        "NAVYBLUE" : ( 60,  60, 100),
-                        "WHITE"    : (255, 255, 255),
-                        "RED"      : (255,   0,   0),
-                        "GREEN"    : (  0, 255,   0),
-                        "BLUE"     : (  0,   0, 255),
-                        "YELLOW"   : (255, 255,   0),
-                        "ORANGE"   : (255, 128,   0),
-                        "PURPLE"   : (255,   0, 255),
-                        "CYAN"     : (  0, 255, 255),
-                        "SILVER"   : (169, 169, 169),
-                        "GOLD"     : (218, 165,  32)}
+        self.ColorsCodes = { "Gray"     : (100, 100, 100),
+                            "NAVYBLUE" : ( 60,  60, 100),
+                            "White"    : (255, 255, 255),
+                            "RED"      : (255,   0,   0),
+                            "GREEN"    : (  0, 255,   0),
+                            "BLUE"     : (  0,   0, 255),
+                            "YELLOW"   : (255, 255,   0),
+                            "Orange"   : (255, 128,   0),
+                            "PURPLE"   : (255,   0, 255),
+                            "CYAN"     : (  0, 255, 255),
+                            "Silver"   : (169, 169, 169),
+                            "Gold"     : (218, 165,  32)}
 
-        self.HIGHLIGHTCOLOR = self.Colors["ORANGE"]
+        self.HIGHLIGHTCOLOR = self.ColorsCodes["Orange"]
 
     def DefineImages(self
                      ) -> None :
@@ -583,6 +598,7 @@ class TheGamePlay(Game):
 
     def DisplayActivePlayer(self
                             ) -> None :
+        # TODO improve this to have something cleaner as messages, probably another layer
 
         self.DISPLAYSURF.blit(self.Images["TurnOfImg"], (0,0.4*self.WINDOWHEIGHT))
         if self.ActivePlayer == 1 :   
@@ -590,237 +606,161 @@ class TheGamePlay(Game):
         if self.ActivePlayer == 2 :
             self.DISPLAYSURF.blit(self.Images["Player2Img"], (0,0.5*self.WINDOWHEIGHT))
 
-    def IsOnAPile(self,
-                  x:int,
-                  y:int
-                  ) -> bool :
-
-        # TODO change the function with : pile.colidepoint
-        if x > (self.WINDOWWIDTH - self.WIDTHCARD)/2 and x < (self.WINDOWWIDTH + self.WIDTHCARD)/2 :
-            if y > self.HEIGHTCARD and y < 5*self.HEIGHTCARD :
-                return True
-            else :
-                return False
-        else:
-            return False
-
-    def leftTopCoordsOfCard(self,
-                            i: int,
-                            PlayerSelected: int,
-                            ActivePlayer = True
-                            ) -> tuple :
-
-        # Convert board coordinates to pixel coordinates
-        if PlayerSelected == 1:
-            if ActivePlayer :
-                x0 = (self.WINDOWWIDTH-len(self.Player1.hand)*self.WIDTHCARD)//2 
-                return (x0+i*self.WIDTHCARD,5*self.HEIGHTCARD)
-            elif not ActivePlayer :
-                x0 = (self.WINDOWWIDTH-len(self.Player2.hand)*self.WIDTHCARD)//2
-                return (x0+i*self.WIDTHCARD,0)
-        elif PlayerSelected == 2:
-            if ActivePlayer :   
-                x0 = (self.WINDOWWIDTH-len(self.Player2.hand)*self.WIDTHCARD)//2 
-                return (x0+i*self.WIDTHCARD,5*self.HEIGHTCARD)
-            elif not ActivePlayer :
-                x0 = (self.WINDOWWIDTH-len(self.Player1.hand)*self.WIDTHCARD)//2
-                return (x0+i*self.WIDTHCARD,0)
+    def CardToImageStr(self,
+                       objectCard
+                       ) -> str :
+        """
+        returns the imageStr (key to the dict image) in function of the objectCard given (can be a card or a str)
+        """
+        if isinstance(objectCard,Card):
+            return str(objectCard.number)+objectCard.color
+        elif isinstance(objectCard,str):
+            return objectCard
+        else :
+            print('The objectCard is not a str or a card ! type : {}'.format(type(objectCard)))
+            return None
 
     def DrawCardOnBoard(self,
-                        ColorStr : str,
-                        CardReference : int,
-                        PlayerSelected : int,
-                        LeftTop=None,
-                        index=-1 ,
-                        ActivePlayer = True
+                        objectCard,
+                        LeftTop : list
                         ):
-        
-        if index>=0:
-            card = self.DISPLAYSURF.blit(self.Images[str(CardReference)+ColorStr], self.leftTopCoordsOfCard(index,PlayerSelected,ActivePlayer=ActivePlayer))
-            return card
-        elif index<0:
-            card = self.DISPLAYSURF.blit(self.Images[str(CardReference)+ColorStr], (LeftTop[0], LeftTop[1]))
-            return card
-            
+        """
+        objectCard can be a card or a str
+        """
+        # TODO find how to return the correct type (and write it after the ) -> : )
+        LeftTopx, LeftTopy = LeftTop
+        card = self.DISPLAYSURF.blit(self.Images[self.CardToImageStr(objectCard)], (LeftTopx, LeftTopy))
+        return card        
+
     def MoveACard(self,
                   x : int,
                   y : int,
-                  CardIndex : int,
-                  PlayerSelected : int
+                  CardIndex : int
                   ) -> None:
 
         LeftTop = [x-(self.WIDTHCARD//2),y-(self.HEIGHTCARD//2)]
-        if PlayerSelected == 1:
-            self.DrawCardOnBoard('Gold',self.Player1.hand[CardIndex].number,PlayerSelected,LeftTop=LeftTop, index=-1 ,ActivePlayer = True)
-            pygame.draw.rect(self.DISPLAYSURF, self.HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , self.WIDTHCARD, self.HEIGHTCARD ), 4)
-            
-        elif PlayerSelected == 2:
-            self.DrawCardOnBoard('Silver',self.Player2.hand[CardIndex].number,PlayerSelected,LeftTop=LeftTop, index=-1 , ActivePlayer = True)
-            pygame.draw.rect(self.DISPLAYSURF, self.HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , self.WIDTHCARD, self.HEIGHTCARD ), 4)
+        if self.Moving == []:
+            self.Moving.append(self.HandsFrontEnd['P'+str(self.PlayerSelected)][CardIndex])
+            self.HandsFrontEnd['P'+str(self.PlayerSelected)].remove(self.HandsFrontEnd['P'+str(self.PlayerSelected)][CardIndex])
 
-    def GetCardIndex(self,
-                     x : int,
-                     y : int,
-                     PlayerSelected : int
-                     ) -> int :
+        self.DrawCardOnBoard(self.Moving[0],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , self.WIDTHCARD, self.HEIGHTCARD ), 4)
 
-        if y > self.WINDOWHEIGHT - self.HEIGHTCARD:
+    def DrawSelectedPlayerHand(self
+                               ) -> list : 
+        """
+        Draws the selected player FrontEnd hand
+        Running Frequency : every loop  
+        """
 
-            if PlayerSelected == 1:
-                L = len(self.Player1.hand)
-            else :
-                L = len(self.Player2.hand)
-            
-            x0 = (self.WINDOWWIDTH-L*self.WIDTHCARD)//2
-            if x > x0 and x < x0 + L*self.WIDTHCARD:
-                CardIndex = (x-x0)//self.WIDTHCARD
-                return CardIndex
-            else :
-                return -1
-        else :
-            return -1            
+        # Define a dict instead ? to check at first it won't change anything         
+        CardsHand = []
+        x0 = (self.WINDOWWIDTH-len(self.HandsFrontEnd['P'+str(self.PlayerSelected)])*self.WIDTHCARD)//2 
 
-    def OnACard(self,
-                x : int,
-                y : int,
-                PlayerSelected : int
-                ) -> bool :
+        for index, card in enumerate(self.HandsFrontEnd['P'+str(self.PlayerSelected)]):
+            LeftTop = (x0+index*self.WIDTHCARD,5*self.HEIGHTCARD)
+            CardsHand.append((self.DrawCardOnBoard(card,LeftTop),LeftTop))
+        return CardsHand
 
-        CardIndex = self.GetCardIndex(x,y,PlayerSelected)
-        if CardIndex >= 0:
-            if PlayerSelected == 1:
-                LeftTop = self.leftTopCoordsOfCard(CardIndex,PlayerSelected)
-            elif PlayerSelected == 2:
-                LeftTop = self.leftTopCoordsOfCard(CardIndex,PlayerSelected)
-            pygame.draw.rect(self.DISPLAYSURF, self.HIGHLIGHTCOLOR, (LeftTop[0], LeftTop[1] , self.WIDTHCARD, self.HEIGHTCARD ), 4)
-            return True
-        else :
-            return False
+    def DrawPiles(self
+                  ) -> list :
 
-    def DrawBoard(self,
-                  PlayerSelected: int
-                  ) -> tuple:
-        i = 0
-        if PlayerSelected == 1:
-            ColorStr = 'Gold'
-            for card in self.Player1.hand:
-                self.DrawCardOnBoard(card.color,card.number,PlayerSelected,index = i)
-                i+=1
+        """
+        Draws the Piles of the players
+        Running Frequency : every time a card is played (Play) or unplayed (Undo)          
+        """
 
-            NumberOfCardsOppo = len(self.Player2.hand)
-            for k in range(NumberOfCardsOppo):
-                self.DrawCardOnBoard('Silver','THEGAME',PlayerSelected,index = k,ActivePlayer=False)
+        # Draws The Pile DOWN of Selected Player    
+        LeftTop = [(self.WINDOWWIDTH-self.WIDTHCARD)//2,4*self.HEIGHTCARD]
+        PileDownAP = self.DrawCardOnBoard(self.Piles['P'+str(self.PlayerSelected)+'_DOWN'][-1],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.ColorsCodes["White"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
-            ####### DRAWS THE PILES #######
+        # Draws The Pile Up of Selected Player    
+        LeftTop = [(self.WINDOWWIDTH-self.WIDTHCARD)//2,3*self.HEIGHTCARD]
+        PileUPAP = self.DrawCardOnBoard(self.Piles['P'+str(self.PlayerSelected)+'_UP'][-1],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.ColorsCodes["White"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
-            # Draws The Pile DOWN of ActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),4*self.HEIGHTCARD]
-            PileDownAP = self.DrawCardOnBoard(self.Player1.PileDOWN[-1:][0].color,self.Player1.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+        # Draws The Pile UP of the Player not selected     
+        NotSelectedPlayer = 3 - self.PlayerSelected # f(x) = 3 - x verifies f(1)=2 and f(2)=1
+        LeftTop = [(self.WINDOWWIDTH-self.WIDTHCARD)//2,2*self.HEIGHTCARD]
+        PileUPNAP = self.DrawCardOnBoard(self.Piles['P'+str(NotSelectedPlayer)+'_UP'][-1],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.ColorsCodes["White"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
-            # Draws The Pile Up of ActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),3*self.HEIGHTCARD]
-            PileUPAP = self.DrawCardOnBoard(self.Player1.PileUP[-1:][0].color,self.Player1.PileUP[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+        # Draws The Pile DOWN of the Player not selected        
+        LeftTop = [(self.WINDOWWIDTH-self.WIDTHCARD)//2,self.HEIGHTCARD]
+        PileDownNAP = self.DrawCardOnBoard(self.Piles['P'+str(NotSelectedPlayer)+'_DOWN'][-1],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.ColorsCodes["White"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
-            # Draws The Pile UP of NonActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),2*self.HEIGHTCARD]
-            PileUPNAP = self.DrawCardOnBoard(self.Player2.PileUP[-1:][0].color,self.Player2.PileUP[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+        return [PileUPAP,PileDownAP,PileUPNAP,PileDownNAP]
 
-            # Draws The Pile DOWN of NonActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),self.HEIGHTCARD]
-            PileDownNAP = self.DrawCardOnBoard(self.Player2.PileDOWN[-1:][0].color,self.Player2.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+    def DrawNotSelectedPlayerHand(self
+                                  ) -> None : 
+        """
+        Draws the not selected player hand
+        Running Frequency : every time a card is played (Play) or unplayed (Undo)   
+        """
 
-            ####### DRAWS THE PILES SYMBOLES #######
+        # Define a dict instead ? to check at first it won't change anything         
 
-            # Draws The Pile DOWN of ActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH-3*self.WIDTHCARD)/2),4*self.HEIGHTCARD]
-            self.DrawCardOnBoard(ColorStr,'DOWN',PlayerSelected,LeftTop)
+        NotSelectedPlayer = 3 - self.PlayerSelected
+        LengthHand = len(self.Hands['P'+str(NotSelectedPlayer)])
+        x0 = (self.WINDOWWIDTH-LengthHand*self.WIDTHCARD)//2 
 
-            # Draws The Pile Up of ActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH-3*self.WIDTHCARD)/2),3*self.HEIGHTCARD]
-            self.DrawCardOnBoard(ColorStr,'UP',PlayerSelected,LeftTop)
+        for index in range(LengthHand):
+            LeftTop = (x0+index*self.WIDTHCARD,0)
+            self.DrawCardOnBoard('THEGAME'+self.color['P'+str(NotSelectedPlayer)],LeftTop)
 
-            # Draws The Pile UP of NonActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH+self.WIDTHCARD)/2),2*self.HEIGHTCARD]
-            self.DrawCardOnBoard('Silver','UP',PlayerSelected,LeftTop)
+    def DrawDecks(self
+                  ) -> list :
+        """
+        Draws the deck of the players
+        Running Frequency : every change of turn (after the draw)        
+        """
+        # TODO check that it works if the deck is empty
 
-            # Draws The Pile DOWN of NonActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH+self.WIDTHCARD)/2),self.HEIGHTCARD]
-            self.DrawCardOnBoard('Silver','DOWN',PlayerSelected,LeftTop)
+        #Draws the selected Player Deck
+        LeftTop = [int((self.WINDOWWIDTH-5*self.WIDTHCARD)/2),int(3.5*self.HEIGHTCARD)]
+        APDeck = self.DrawCardOnBoard('THEGAME'+self.color['P'+str(self.PlayerSelected)],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.ColorsCodes["Gray"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
-            ####### DRAWS THE DECKS #######
+        #Draws the Not selected Player Deck
+        NotSelectedPlayer = 3 - self.PlayerSelected
+        LeftTop = [int((self.WINDOWWIDTH + 3*self.WIDTHCARD)/2),int(1.5*self.HEIGHTCARD)]
+        NAPDeck = self.DrawCardOnBoard('THEGAME'+self.color['P'+str(NotSelectedPlayer)],LeftTop)
+        pygame.draw.rect(self.DISPLAYSURF, self.ColorsCodes["Gray"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
 
-            ## DRAWS THE DECK OF ACTIVEPLAYER
-            LeftTop = [int((self.WINDOWWIDTH-5*self.WIDTHCARD)/2),int(3.5*self.HEIGHTCARD)]
-            APDeck = self.DrawCardOnBoard(ColorStr,'THEGAME',PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["GRAY"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+        return [APDeck,NAPDeck]
 
-            ## DRAWS THE DECK OF NONACTIVEPLAYER
-            LeftTop = [int((self.WINDOWWIDTH + 3*self.WIDTHCARD)/2),int(1.5*self.HEIGHTCARD)]
-            NAPDeck = self.DrawCardOnBoard('Silver','THEGAME',PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["GRAY"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+    def DrawSetup(self
+                  ) -> None:
+        """
+        Draws the Pile symbols of the players
+        Running Frequency : Once at the setup             
+        """
 
-        elif PlayerSelected == 2:
-            ColorStr = 'Silver'
-            for card in self.Player2.hand:
-                self.DrawCardOnBoard(card.color,card.number,PlayerSelected,index = i)
-                i+=1
+        # Draws The Pile DOWN of ActivePlayer    
+        LeftTop = [int((self.WINDOWWIDTH-3*self.WIDTHCARD)/2),4*self.HEIGHTCARD]
+        self.DrawCardOnBoard('DOWN'+self.color['P'+str(self.PlayerSelected)],LeftTop)
 
-            NumberOfCardsOppo = len(self.Player1.hand)
-            for k in range(NumberOfCardsOppo):
-                self.DrawCardOnBoard('Gold','THEGAME',PlayerSelected,index = k,ActivePlayer=False)
+        # Draws The Pile Up of ActivePlayer   
+        LeftTop = [int((self.WINDOWWIDTH-3*self.WIDTHCARD)/2),3*self.HEIGHTCARD]
+        self.DrawCardOnBoard('UP'+self.color['P'+str(self.PlayerSelected)],LeftTop)
 
-            # Draws The Pile DOWN of ActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),4*self.HEIGHTCARD]
-            PileDownAP = self.DrawCardOnBoard(self.Player2.PileDOWN[-1:][0].color,self.Player2.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+        # Draws The Pile UP of NonActivePlayer    
+        NotSelectedPlayer = 3 - self.PlayerSelected
+        LeftTop = [int((self.WINDOWWIDTH+self.WIDTHCARD)/2),2*self.HEIGHTCARD]
+        self.DrawCardOnBoard('UP'+self.color['P'+str(NotSelectedPlayer)],LeftTop)
 
-            # Draws The Pile UP of ActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),3*self.HEIGHTCARD]
-            PileUPAP = self.DrawCardOnBoard(self.Player2.PileUP[-1:][0].color,self.Player2.PileUP[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+        # Draws The Pile DOWN of NonActivePlayer   
+        LeftTop = [int((self.WINDOWWIDTH+self.WIDTHCARD)/2),self.HEIGHTCARD]
+        self.DrawCardOnBoard('DOWN'+self.color['P'+str(NotSelectedPlayer)],LeftTop)     
 
-            # Draws The Pile UP of NonActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),2*self.HEIGHTCARD]
-            PileUPNAP = self.DrawCardOnBoard(self.Player1.PileUP[-1:][0].color,self.Player1.PileUP[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
-
-            # Draws The Pile DOWN of NonActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH-self.WIDTHCARD)/2),self.HEIGHTCARD]
-            PileDownNAP = self.DrawCardOnBoard(self.Player1.PileDOWN[-1:][0].color,self.Player1.PileDOWN[-1:][0].number,PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["WHITE"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
-
-            ####### DRAWS THE PILES SYMBOLES #######
-
-            # Draws The Pile DOWN of ActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH-3*self.WIDTHCARD)/2),4*self.HEIGHTCARD]
-            self.DrawCardOnBoard(ColorStr,'DOWN',PlayerSelected,LeftTop)
-
-            # Draws The Pile Up of ActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH-3*self.WIDTHCARD)/2),3*self.HEIGHTCARD]
-            self.DrawCardOnBoard(ColorStr,'UP',PlayerSelected,LeftTop)
-
-            # Draws The Pile UP of NonActivePlayer    
-            LeftTop = [int((self.WINDOWWIDTH+self.WIDTHCARD)/2),2*self.HEIGHTCARD]
-            self.DrawCardOnBoard('Gold','UP',PlayerSelected,LeftTop)
-
-            # Draws The Pile DOWN of NonActivePlayer   
-            LeftTop = [int((self.WINDOWWIDTH+self.WIDTHCARD)/2),self.HEIGHTCARD]
-            self.DrawCardOnBoard('Gold','DOWN',PlayerSelected,LeftTop)
-
-            ####### DRAWS THE DECKS #######
-
-            ## DRAWS THE DECK OF ACTIVEPLAYER
-            LeftTop = [int((self.WINDOWWIDTH-5*self.WIDTHCARD)/2),int(3.5*self.HEIGHTCARD)]
-            APDeck = self.DrawCardOnBoard(ColorStr,'THEGAME',PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["GRAY"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
-
-            ## DRAWS THE DECK OF NONACTIVEPLAYER
-            LeftTop = [int((self.WINDOWWIDTH + 3*self.WIDTHCARD)/2),int(1.5*self.HEIGHTCARD)]
-            NAPDeck = self.DrawCardOnBoard('Gold','THEGAME',PlayerSelected,LeftTop)
-            pygame.draw.rect(self.DISPLAYSURF, self.Colors["GRAY"], (LeftTop[0] , LeftTop[1] , self.WIDTHCARD , self.HEIGHTCARD ), 4)
+    def DrawBoard(self
+                  ) -> list:
         
-        return (PileDownAP,PileUPAP,PileDownNAP,PileUPNAP,APDeck,NAPDeck)
+        FrontEndHand = self.DrawSelectedPlayerHand()
+        Piles = self.DrawPiles() 
+        Decks = self.DrawDecks()
+        self.DrawSetup()
+        self.DrawNotSelectedPlayerHand()
+        return FrontEndHand, Piles, Decks

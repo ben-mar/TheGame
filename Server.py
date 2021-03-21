@@ -7,10 +7,9 @@ import TheGame
 
 class GameServer(object):
 
-	def __init__(self,server = "192.168.1.6", port=9009): # TODO the max_num_players = 2
+	def __init__(self,server = "127.0.0.1", port=9009): # TODO the max_num_players = 2
 		self.listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		# Bind to localhost - set to external ip to connect from other computers
-		# self.listener.listen(2)
 		self.listener.bind((server, port))
 		self.read_list = [self.listener]
 		self.write_list = []   
@@ -151,6 +150,7 @@ class GameServer(object):
 						msg = msg[3:]
 					if cmd == "NEW":  # New Connection
 						PlayerSelected = int(msg)
+						# TODO invert this : key the selected player and value the addr, in order to be able to adress a msg only to player 1 or 2
 						self.players[addr] = (addr,PlayerSelected)
 						self.setupNewPlayer(addr)
 						print("New Player")
@@ -225,6 +225,15 @@ class GameServer(object):
 						self.game.Undo()
 						for addr in self.players:
 							self.listener.sendto((cmd).encode(), addr)
+
+					elif cmd == "SRT":
+						Cardstr,index,CurrentPlayerSelected = msg.split(";")
+						Card = self.Decode(Cardstr)[0]
+						self.game.SortHand(int(index),Card,CurrentPlayerSelected)
+						print(self.game.Hands['P'+CurrentPlayerSelected])
+						# improve, we want to send the sort message only to the player sorting his hand
+						for addr in self.players:
+							self.listener.sendto((cmd + msg).encode(), addr)	
 
 					elif cmd == "QUI":  # Player Quitting
 						if addr in self.players:
