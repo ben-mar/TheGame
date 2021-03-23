@@ -9,6 +9,6 @@
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,
-    "python.linting.pylintArgs": ["--extension-pkg-whitelist=pygame","--disable", "W0312,redefined-outer-name,wildcard-import,unused-wildcard-import,line-too-long,missing-final-newline,superfluous-parens,attribute-defined-outside-init,trailing-whitespace,bad-continuation,bad-whitespace,fixme,invalid-name,missing-module-docstring,missing-class-docstring,missing-function-docstring"],
+    "python.linting.pylintArgs": ["--extension-pkg-whitelist=pygame","--disable", "W0312,W0311,redefined-outer-name,wildcard-import,unused-wildcard-import,line-too-long,missing-final-newline,superfluous-parens,attribute-defined-outside-init,trailing-whitespace,bad-continuation,bad-whitespace,fixme,invalid-name,missing-module-docstring,missing-class-docstring,missing-function-docstring"],
     "python.linting.flake8Args": ["--ignore=W0312,W504", "--verbose"]
 }

@@ -306,7 +306,8 @@ class Game:
     def Put(self,
             Pile: str,
             card : Card,
-            PlayerSelected : int
+            PlayerSelected : int,
+            verbosity : str = True
             ) -> int :
 
         # TODO change related to color of the card you're trying to put !!
@@ -316,21 +317,22 @@ class Game:
             self.Piles[Pile].append(card) 
             return 0
         else:
-            print('Not possible to Put number {} on the Pile {} of the player {}'.format(card.number,Pile[3:],Pile[1]))
+            if verbosity:
+                print('Not possible to Put number {} on the Pile {} of the player {}'.format(card.number,Pile[3:],Pile[1]))
             return 1
 
     def Play(self,
              Pile: str,
              card: Card,
              PlayerSelected : int,
-             verbosity = True
+             verbosity :str = True
              ) -> None :
         """
         This function plays the card "card" on the pile "PileName"
         """
 
         if card in self.Hands['P' + str(self.ActivePlayer)] :
-            err = self.Put(Pile,card,PlayerSelected)
+            err = self.Put(Pile,card,PlayerSelected,verbosity)
             if err == 0 :
                 self.Hands['P' + str(self.ActivePlayer)].remove(card)
                 self.PlayedThisTurn['P' + str(self.ActivePlayer)].append((card,Pile))
@@ -338,10 +340,12 @@ class Game:
                     print('Played !')
                 return True
             else:
-                print('Not Played')
+                if verbosity:
+                    print('Not Played')
                 return False
         else:
-            print('Not in hand !')
+            if verbosity:
+                print('Not in hand !')
             return False
 
 
@@ -428,7 +432,8 @@ class Game:
     #     PileName = str(input("Pile Up or down ?")).upper()
     #     Game.Play(self,PileIndex,Number,PileName)
 
-    def Undo(self
+    def Undo(self,
+             verbosity : str = True
              ) -> None :
 
         """
@@ -446,8 +451,10 @@ class Game:
             self.Hands['P'+str(self.ActivePlayer)].append(LastPlayedCard)
             if LastPlayedCard.color != self.color[LastPlayedPile[:2]]:
                 self.PlayedOnOpponnentPiles['P'+str(self.ActivePlayer)] = False
-                print('Undo Played on oppo piles')                
-            print('Undone !')
+                if verbosity:
+                    print('Undo Played on oppo piles')    
+            if verbosity:            
+                print('Undone !')
 
     def CheckIfLoose(self,
                      PlayerSelected : int,
