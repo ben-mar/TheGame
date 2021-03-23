@@ -349,7 +349,6 @@ class GameClient:
 
 		while NotClickedOut:
 							
-
 			i =len(DisplayedPile)*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin)
 			j = 0
 			for card in DisplayedPile:
