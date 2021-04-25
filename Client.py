@@ -379,7 +379,7 @@ class GameClient:
 
 		while NotClickedOut:
 							
-			i = round(NumberOfCards*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin))
+			# i = round(NumberOfCards*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin))
 			j = 0
 			# for card in DisplayedPile:
 			# 	if j<i : # before the card i

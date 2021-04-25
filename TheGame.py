@@ -241,6 +241,10 @@ class Game:
     def __init__(self
                  ) -> None :
 
+        """
+        Initialises the Game class : initialises the Player 1 and Player 2, their decks and piles
+        """
+
         self.size = 60
         self.color = {'P1' : 'Gold', 'P2' : 'Silver'}
         self.Player1 = Player(self.size,self.color['P1'])
@@ -316,7 +320,7 @@ class Game:
                  PlayerSelected : int
                  ) -> None :
         """
-        Sorts the hand
+        Sorts the hand of selected player by changing the CardToSort and putting it to the index place
         """
 
         self.Hands['P'+str(PlayerSelected)].remove(CardToSort)
@@ -332,6 +336,7 @@ class Game:
         """
         Returns a bool corresponding to the rule applied according to the selected pile
         """
+
         PileDirection = Pile[3:]
         if PlayOnHisOwnPile & (PileDirection == 'UP'):
             return (self.Piles[Pile][-1].number < card.number ) or\
@@ -383,6 +388,10 @@ class Game:
             verbosity : str = True
             ) -> int :
 
+        """
+        Puts a card on a pile if CheckAction allows the move
+        """
+
         # TODO change related to color of the card you're trying to put !!
         if self.CheckAction(Pile,card,PlayerSelected,verbosity=True):
             if self.ActivePlayer != int(Pile[1]):
@@ -400,6 +409,7 @@ class Game:
              PlayerSelected : int,
              verbosity :str = True
              ) -> None :
+
         """
         This function plays the card "card" on the pile "PileName"
         """
@@ -424,6 +434,10 @@ class Game:
 
     def Concede(self
                 ) -> None :
+        
+        """
+        Changes the value of gameover according to the value of ActivePlayer
+        """
 
         if self.ActivePlayer == 1 :
             self.GameOver['P1'] = True
@@ -433,6 +447,10 @@ class Game:
     def ChangeActivePlayer(self
                            ) -> None :
 
+        """
+        Changes the value of ActivePLayer according to the current value of ActivePlayer
+        """
+
         if self.ActivePlayer == 1 :
             self.ActivePlayer = 2
         else :
@@ -441,6 +459,10 @@ class Game:
     
     def DrawEndOfTurn(self
                       ) -> None :
+        
+        """
+        Makes the ActivePlayer draw the correct number of cards at the end of it's turn.
+        """
 
         if self.ActivePlayer == 1 :
             if self.PlayedOnOpponnentPiles['P'+str(self.ActivePlayer)]:
@@ -455,10 +477,16 @@ class Game:
             else :
                 self.Player2.Draw(2)
         else :
-            print("Pb : ActivePlayer = ",self.ActivePlayer )
+            print("Execption : ActivePlayer = ",self.ActivePlayer )
 
     def HasTheRightToEndTurn(self
                              ) -> int :
+
+        """
+        Returns 1 if the ActivePlayer has played at least 2 cards this turn (and has the right to end his turn).
+        Returns 0 otherwise
+        """
+        
 
         if len(self.PlayedThisTurn['P'+str(self.ActivePlayer)]) < 2:
             return 0 
@@ -468,6 +496,12 @@ class Game:
 
     def EndOfTurn(self
                   ) -> int :
+        
+        """
+        Ends the turn of ActivePlayer and checks if one player has won or not.
+        Returns 1 if the ActivePlayer has indeed finished his turn.
+        Returns 0 otherwise.
+        """
 
         if self.HasTheRightToEndTurn() == 1: 
             self.PlayedThisTurn = {'P1' : [], 'P2' : []}
@@ -594,6 +628,10 @@ class GameFrontEnd(Game):
                  height :int = 720
                  )-> None:
 
+        """
+        Initialises GameFrontEnd class
+        """
+
         Game.__init__(self)
 
         self.dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -615,6 +653,10 @@ class GameFrontEnd(Game):
                     height: int
                     ) -> None:
 
+        """
+        Sets up the front end Pygame properties 
+        """
+
         pygame.init()
 
         # initialize font; must be called after 'pygame.init()' to avoid 'Font not Initialized' error
@@ -627,6 +669,10 @@ class GameFrontEnd(Game):
     def DefineSizes(self
                     ) -> None :
 
+        """
+        Defines the sizes of the Cards according to the size of the window
+        """
+
         self.WINDOWWIDTH = self.DISPLAYSURF.get_width()
         self.WINDOWHEIGHT = self.DISPLAYSURF.get_height()
         #self.HEIGHTCARD = int(self.WINDOWHEIGHT/6)
@@ -636,6 +682,9 @@ class GameFrontEnd(Game):
     def DefineColors(self
                      ) -> None :
 
+        """
+        Defines the colors from the RGB code
+        """
                             #            R    G    B
         self.ColorsCodes = { "Gray"     : (100, 100, 100),
                             "NAVYBLUE" : ( 60,  60, 100),
@@ -654,6 +703,10 @@ class GameFrontEnd(Game):
 
     def DefineImages(self
                      ) -> None :
+
+        """
+        Defines the images with their size by looking at the path
+        """
 
         self.Images = { "Player1Img" : pygame.transform.scale(pygame.image.load('./Pictures/Player1.png'),(int(0.2*self.WINDOWWIDTH), int(0.1*self.WINDOWHEIGHT))),
                         "Player2Img" : pygame.transform.scale(pygame.image.load('./Pictures/Player2.png'),(int(0.2*self.WINDOWWIDTH), int(0.1*self.WINDOWHEIGHT))),
@@ -678,6 +731,11 @@ class GameFrontEnd(Game):
 
     def DisplayActivePlayer(self
                             ) -> None :
+
+        """
+        Displays at the top left opf the screen the turn of the current player
+        """
+
         # TODO improve this to have something cleaner as messages, probably another layer
 
         self.DISPLAYSURF.blit(self.Images["TurnOfImg"], (0,0.4*self.WINDOWHEIGHT))
@@ -689,9 +747,11 @@ class GameFrontEnd(Game):
     def CardToImageStr(self,
                        objectCard
                        ) -> str :
+
         """
         returns the imageStr (key to the dict image) in function of the objectCard given (can be a card or a str)
         """
+
         if isinstance(objectCard,Card):
             return str(objectCard.number)+objectCard.color
         elif isinstance(objectCard,str):
@@ -704,9 +764,11 @@ class GameFrontEnd(Game):
                         objectCard,
                         LeftTop : list
                         ):
+
         """
         objectCard can be a card or a str
         """
+
         # TODO find how to return the correct type (and write it after the ) -> : )
         LeftTopx, LeftTopy = LeftTop
         card = self.DISPLAYSURF.blit(self.Images[self.CardToImageStr(objectCard)], (LeftTopx, LeftTopy))
@@ -717,6 +779,10 @@ class GameFrontEnd(Game):
                   y : int,
                   CardIndex : int
                   ) -> None:
+
+        """
+        Moves a card from the hand to the FrontEnd Hand and displays it moving according to the mouse 
+        """
 
         LeftTop = [x-(self.WIDTHCARD//2),y-(self.HEIGHTCARD//2)]
         if self.Moving == []:
@@ -837,6 +903,10 @@ class GameFrontEnd(Game):
 
     def DrawBoard(self
                   ) -> list:
+
+        """
+        Draws the whole board on the screen with all the layers
+        """ 
         
         FrontEndHand = self.DrawSelectedPlayerHand()
         Piles = self.DrawPiles() 

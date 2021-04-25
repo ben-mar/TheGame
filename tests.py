@@ -148,9 +148,6 @@ class GameTest(unittest.TestCase):
 
     def setUp(self):
 
-        # self.Game.color['P1'] = 'Gold'
-        # self.Game.color['P2'] = 'Silver'
-
         self.color = {'P1' : 'Gold', 'P2' : 'Silver'}
 
     def test_DeepcopyForCheckIfLoose(self):
@@ -516,7 +513,6 @@ class GameTest(unittest.TestCase):
         self.Game.Player2.deck = TheGame.CreateListOfCards([5,32,9,51,53,48],self.Game.color['P2'])
         self.Game.Player1.hand = TheGame.CreateListOfCards([2,3],self.Game.color['P1'])
         self.Game.Player2.hand = TheGame.CreateListOfCards([7,52,45],self.Game.color['P2'])
-        #self.Game.PlayedOnOpponnentPiles = [False,True]       
 
         self.Game.Piles = {"P1_UP" : self.Game.Player1.PileUP,
                         "P1_DOWN" : self.Game.Player1.PileDOWN,
@@ -573,7 +569,7 @@ class GameTest(unittest.TestCase):
         self.assertTrue(self.Game.GameOver['P2'])
 
     def test_CheckIfLoose(self):
-        # TODO THIS TEST MUST BE PERFECT FOR THE IMPLEMENTATION FO THE RL ALGORITHM
+        # TODO THIS TEST MUST BE PERFECT FOR THE IMPLEMENTATION FOR THE RL ALGORITHM
         # 2 things to check : that it is exact (no FP or FN) : 
         #                   : that it doesn't impact the game after except for the value of Gameover: DONE
 
