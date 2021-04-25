@@ -7,7 +7,17 @@ import TheGame
 
 class GameServer(object):
 
-	def __init__(self,server = "127.0.0.1", port=9009): # TODO the max_num_players = 2
+	def __init__(self,
+				server : str = "127.0.0.1",
+				port : int = 9009
+				)-> None : # TODO the max_num_players = 2
+
+		"""
+		Initialises the GameServer class, with the server port and address.
+		So far it's only possible to play in local but one of the potential improvements would be to allow internet connexion
+		between players
+		"""
+	
 		self.listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		# Bind to localhost - set to external ip to connect from other computers
 		self.listener.bind((server, port))
@@ -20,7 +30,11 @@ class GameServer(object):
 			   objectToEncode,
 			   typeToEncode :str  = 'ListOfCards' 
 			   ) -> str:
-		
+
+		"""
+		Encodes the parameter objectToEncode according to the type of object (typeToEncode)
+		"""
+
 		if typeToEncode == 'ListOfCards':
 			if not isinstance(objectToEncode, list):
 				raise("The ListOfCards for the encoding is not an list type !")
@@ -66,6 +80,10 @@ class GameServer(object):
 			   typeToDecode :str  = 'ListOfCards' 
 			   ):
 
+		"""
+		Decodes the parameter objectToDecode according to the type of object (typeToDecode)
+		"""
+
 		if typeToDecode == 'ListOfCards':		
 			# Decodes the messages
 			ListOfCards = [] 
@@ -98,7 +116,13 @@ class GameServer(object):
 			raise("Not treated yet, the typeToEncode is not correct ! : {}".format(typeToDecode))		
 		 
 
-	def setupNewPlayer(self,addr):
+	def setupNewPlayer(self,
+					   addr : int
+					   ) -> None :
+
+		"""
+		Sets Up a player that just connected to the game
+		"""
 
 		# SetUp1 : send the hand, deck , and activeplayer
 		msg = "SU1"+ self.Encode(self.game.Player1.hand)
@@ -132,7 +156,13 @@ class GameServer(object):
 		self.listener.sendto(msg2.encode(), addr)
 		self.listener.sendto(msg3.encode(), addr)
     
-	def run(self):
+	def run(self
+			)-> None:
+
+		"""
+		Principal function, that makes the server run		
+		"""
+
 		Running = True
 		print("Waiting...")
 	#try:

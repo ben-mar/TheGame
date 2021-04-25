@@ -11,7 +11,17 @@ import TheGame
 
 class GameClient:
 
-	def __init__(self, addr="127.0.0.1", serverport=9009):
+	def __init__(self,
+				 addr : str = "127.0.0.1",
+				 serverport : int = 9009
+				 ) -> None:
+
+		"""
+		Initialises the GameClient class, with the server port and address.
+		So far it's only possible to play in local but one of the potential improvements would be to allow internet connexion
+		between players
+		"""
+
 		self.clientport = random.randrange(8000, 8999)
 		self.conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		# Bind to localhost - set to external ip to connect from other computers
@@ -23,6 +33,11 @@ class GameClient:
 		self.setup_pygame()
   
 	def setup_pygame(self):
+		
+		"""
+		Initalises the game and pygame
+		"""
+
 		self.game = TheGame.GameFrontEnd()
 		pygame.display.set_caption('The Game')
 
@@ -30,6 +45,10 @@ class GameClient:
 			   objectToEncode,
 			   typeToEncode :str  = 'ListOfCards' 
 			   ) -> str:
+
+		"""
+		Encodes the parameter objectToEncode according to the type of object (typeToEncode)
+		"""
 		
 		if typeToEncode == 'ListOfCards':
 			if not isinstance(objectToEncode, list):
@@ -75,6 +94,10 @@ class GameClient:
 			   objectToDecode : str,
 			   typeToDecode :str  = 'ListOfCards' 
 			   ):
+
+		"""
+		Decodes the parameter objectToDecode according to the type of object (typeToDecode)
+		"""
 
 		if typeToDecode == 'ListOfCards':		
 			# Decodes the messages
@@ -405,7 +428,7 @@ class GameClient:
 			) -> None:
 
 		"""
-		Principal function, that makes the game run		
+		Principal function, that makes the client run		
 		"""
 
 		running = True

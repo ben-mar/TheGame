@@ -7,6 +7,11 @@ def CreateListOfCards(ListOfNumbers: list,
                       color: str
                       ) -> list:
 
+    """
+    Creates a list of Card objects from the color given in input and the list of numbers
+    Note : This doesn't allow for creating a list of cards with different color in it 
+    """
+
     return [Card(i,color) for i in ListOfNumbers]
 
 class Card:
@@ -15,6 +20,11 @@ class Card:
                  number : int,
                  color: str
                  ) -> None: 
+
+        """
+        Initialises the Card object with the color and the number 
+        """
+        
         if not isinstance(number, int):
             raise("The number for the initialisation is not an int")
         if not isinstance(color, str):
@@ -26,7 +36,9 @@ class Card:
                other
                ) -> bool:
 
-        """Overrides the default implementation"""
+        """
+        Defines the equality between two cards
+        """
 
         if isinstance(other, Card):
             SameNumber = (self.number == other.number)
@@ -35,10 +47,22 @@ class Card:
 
         return False
 
-    def __repr__(self):
+    def __repr__(self
+                ) -> str:
+
+        """
+        Defines the representation of a Card
+        """
+
         return "Card : "+str(self.number)+", color: "+self.color
 
-    def __str__(self):
+    def __str__(self
+               ) -> str:
+
+        """
+        Defines the string of a Card
+        """
+
         return "Card : "+str(self.number)+", color: "+self.color
 
 class Hand:
@@ -47,6 +71,10 @@ class Hand:
                  ListOfNumbers: list,
                  color: str
                  ) -> None:
+        
+        """
+        Initialises the Hand class
+        """
 
         if len(ListOfNumbers) != 0:
             for number in ListOfNumbers:
@@ -54,10 +82,16 @@ class Hand:
                     Exception("The list is not only composed of integers !")
 
         self.color = color        
-        self.hand = [Card(i,self.color) for i in ListOfNumbers]
+        self.hand = CreateListOfCards(ListOfNumbers, self.color)
+
 
     def __repr__(self
                 ) -> str :
+
+        """
+        Defines the representation of a Hand of cards
+        """        
+        
         repre = ''
         for card in self.hand:
             repre = repre +  "Card : "+str(card.number)+", color: "+card.color
@@ -65,6 +99,11 @@ class Hand:
 
     def __str__(self
                 ) -> str :
+
+        """
+        Defines the string of a Hand
+        """
+
         list_ = []
         for card in self.hand:
             list_.append(card.number)
@@ -77,16 +116,29 @@ class Deck:
                  color: str
                  ) -> None:
 
+        """
+        Initialises the Deck class
+        """
+
         self.color = color
         self.size = size
         self.deck = [Card(i,self.color) for i in range(2,self.size)]
 
     def ShuffleDeck(self):
+        
+        """
+        Shuffles the deck
+        """
+
         np.random.shuffle(self.deck)
 
     def __eq__(self,
                other
                ) -> bool:
+
+        """
+        Defines the equality between two decks
+        """
 
         if isinstance(other, Deck):
             loop = 0
@@ -104,6 +156,10 @@ class Deck:
     def __repr__(self
                  ) -> str :
 
+        """
+        Defines the representation of a Hand of cards
+        """   
+
         repre = ''
         for card in self.deck:
             repre = repre +  "Card : "+str(card.number)+", color: "+card.color
@@ -111,6 +167,10 @@ class Deck:
 
     def __str__(self
                 ) -> str :
+
+        """
+        Defines the string of a Hand
+        """
 
         list_ = []
         for card in self.deck:
@@ -123,6 +183,10 @@ class Player:
                  size: int,
                  color: str
                  ) -> None :
+
+        """
+        Initialises the Player Class
+        """
 
         self.color = color
         self.size = size
@@ -137,6 +201,10 @@ class Player:
     def EmptyPiles(self
                    ) -> None :
 
+        """
+        Empty piles of the player
+        """
+
         self.PileUP = [Card(number = 1, color = self.color)]
         self.PileDOWN = [Card(number = self.size, color = self.color)]
 
@@ -148,6 +216,7 @@ class Player:
         Draws a number of cards equal to NumberOfCards from the deck (self.Deck).
         If the deck has not enough cards in it, the function draws the whole resting deck.
         """
+
         if len(self.deck) >= NumberOfCards :
             self.hand += self.deck[-NumberOfCards:]
             self.deck = self.deck[:-NumberOfCards]
@@ -157,6 +226,10 @@ class Player:
 
     def setup(self
               ) -> None :
+
+        """
+        Sets up the new player deck, piles and hand
+        """
 
         self.deckInstance.ShuffleDeck()
         self.EmptyPiles()
