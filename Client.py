@@ -305,13 +305,13 @@ class GameClient:
 
 		GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
 		GraySurf.fill((150,150,150,150))
-		x0 = int(0.2*self.game.WINDOWWIDTH)
-		y0 = int((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2)
-
-		PileBoxSize = (int(0.6*self.game.WINDOWWIDTH),int(self.game.HEIGHTCARD))
-		PileBox = pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
-			( x0, y0 , PileBoxSize[0] , PileBoxSize[1] ), 4)
 		self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+
+
+		# PileBoxSize = (int(0.6*self.game.WINDOWWIDTH), int(self.game.HEIGHTCARD))
+		# PileBox = pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
+		# 	( x0, y0 , PileBoxSize[0] , PileBoxSize[1] ), 4)
+		
 
 		# create cursor surface and cursor:
 
@@ -319,7 +319,7 @@ class GameClient:
 		SurfCursor = pygame.Surface(SurfCursorSize, pygame.SRCALPHA)   # per-pixel alpha
 		SurfCursor.fill((40,40,40,255))
 		x0SurfCursor = int(0.3*self.game.WINDOWWIDTH)
-		y0SurfCursor = int(y0 + 1.5*self.game.HEIGHTCARD)
+		y0SurfCursor = int(((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2) + 1.5*self.game.HEIGHTCARD)
 		SurfCursorBlit = self.game.DISPLAYSURF.blit(SurfCursor, (x0SurfCursor,y0SurfCursor))
 
 		pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
@@ -332,7 +332,7 @@ class GameClient:
 
 		Cursor = pygame.Surface(CursorSize, pygame.SRCALPHA)   # per-pixel alpha
 		Cursor.fill((0,0,0,255))
-		CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(y0 + 1.5*self.game.HEIGHTCARD)))
+		CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2) + 1.5*self.game.HEIGHTCARD)))
 
 		CursorSelected = False
 
@@ -343,26 +343,35 @@ class GameClient:
 		DisplayedPile = self.game.Piles[self.mapping_play_card[(index,self.game.PlayerSelected)]]
 
 
+		NumberOfCards = len(DisplayedPile)
+		Ltot = self.game.WIDTHCARD * (NumberOfCards - 1) / 3 + self.game.WIDTHCARD 
+
+		x0 = int((self.game.WINDOWWIDTH - Ltot) /2 )  
+		y0 = int((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2)
+
 		# TODO : handle case where the pile is empty (just 1 card in it : division by 0 )
 		# TODO : fetch the active player before so that WidthSeenCard depends on the selected player 
-		WidthSeenCard = (PileBoxSize[0] - self.game.WIDTHCARD)/(len(DisplayedPile)+1) # represent the width of a card displayed but not completely shown on a pile
+		#WidthSeenCard = (int(0.6*self.game.WINDOWWIDTH) - self.game.WIDTHCARD)/(NumberOfCards+1) # represent the width of a card displayed but not completely shown on a pile
+		WidthSeenCard = (1 / 3) * self.game.WIDTHCARD
 
 		while NotClickedOut:
 							
-			i =len(DisplayedPile)*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin)
+			i = round(NumberOfCards*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin))
 			j = 0
+			# for card in DisplayedPile:
+			# 	if j<i : # before the card i
+			# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
+			# 	elif j==i:
+			# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+(j-1)*WidthSeenCard +self.game.WIDTHCARD,y0])
+			# 	elif j>i:
+			# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
+			# 	j+=1
 			for card in DisplayedPile:
-				if j<i : # before the card i
-					self.game.DrawCardOnBoard(card,LeftTop=[int(x0+j*WidthSeenCard),y0])
-				elif j==i:
-					self.game.DrawCardOnBoard(card,LeftTop=[int(x0+j*WidthSeenCard),y0])
-				elif j>i:
-					self.game.DrawCardOnBoard(card,LeftTop=[int(x0+(j-1)*WidthSeenCard+self.game.WIDTHCARD),y0])
+				self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
 				j+=1
-
 										
 			for event in pygame.event.get():
-				if event.type == MOUSEBUTTONDOWN and event.button == 1 and not (PileBox.collidepoint(self.mousex,self.mousey) or SurfCursorBlit.collidepoint(self.mousex,self.mousey)):
+				if event.type == MOUSEBUTTONDOWN and event.button == 1 and not (SurfCursorBlit.collidepoint(self.mousex,self.mousey)): #or PileBox.collidepoint(self.mousex,self.mousey) or ):
 					NotClickedOut = False
 				elif event.type == MOUSEBUTTONDOWN and event.button == 1 and CursorBlit.collidepoint(self.mousex,self.mousey):
 					CursorSelected = True
@@ -436,6 +445,7 @@ class GameClient:
 			# the game
 			# Initialisation
 			CardIndex = 0
+			StoredIndex = -1
 
 			while running:
 
@@ -540,14 +550,18 @@ class GameClient:
 					if self.game.Moving != [] and not play_tmp:
 						self.game.HandsFrontEnd['P' + str(self.game.PlayerSelected)].insert(CardIndex,self.game.Moving[0])	
 						self.game.Moving = []
-										
-		
+
+				
+				# into a pile
+				if StoredIndex > -1 :						
+					self.ShowPilesScreen(StoredIndex)
+					StoredIndex = -1
 
 				# Pile, EOT or concede block
 				if mouseClicked :
 					for index, pile in enumerate(Piles):
 						if pile.collidepoint(self.mousex, self.mousey):
-							self.ShowPilesScreen(index)
+							StoredIndex = index	
 
 					if boxRectQUIT.collidepoint(self.mousex,self.mousey):
 						#self.game.Concede()
