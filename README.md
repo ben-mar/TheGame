@@ -5,5 +5,5 @@ The Goal is to allow players from the world to play this game between them of ag
 
 # Run
 
--1 Run Server.py
+-1 Run Server.py\
 -2 Run Client.py
