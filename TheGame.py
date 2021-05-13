@@ -760,9 +760,31 @@ class GameFrontEnd(Game):
             print('The objectCard is not a str or a card ! type : {}'.format(type(objectCard)))
             return None
 
+    def GenereteRotation(self,
+                         NumberOfCardsToDisplay : int,
+                         alpha : float
+                         ) -> list :
+        """
+        Creates rotation list from the Number of cards to display in the piles
+        """
+
+        assert(NumberOfCardsToDisplay >= 1)
+
+        if NumberOfCardsToDisplay == 1:
+            RotationList = [0]
+
+        else :
+            a = 2*alpha / (1 - NumberOfCardsToDisplay) 
+            b = alpha*( (NumberOfCardsToDisplay + 1) / (NumberOfCardsToDisplay - 1))
+            RotationList = [ a*i + b for i in range(1,NumberOfCardsToDisplay + 1) ]
+
+        return RotationList
+
+
     def DrawCardOnBoard(self,
                         objectCard,
-                        LeftTop : list
+                        LeftTop : list,
+                        rotation : float = 0
                         ):
 
         """
@@ -771,8 +793,14 @@ class GameFrontEnd(Game):
 
         # TODO find how to return the correct type (and write it after the ) -> : )
         LeftTopx, LeftTopy = LeftTop
-        card = self.DISPLAYSURF.blit(self.Images[self.CardToImageStr(objectCard)], (LeftTopx, LeftTopy))
-        return card        
+        CardToDisplay = self.Images[self.CardToImageStr(objectCard)]
+        CardCenter = (int(LeftTopx + self.WIDTHCARD/2), int(LeftTopy + self.HEIGHTCARD/2))
+
+        CardToDisplay = pygame.transform.rotate(CardToDisplay, rotation)
+        rect = CardToDisplay.get_rect()
+        rect.center = CardCenter
+        card = self.DISPLAYSURF.blit(CardToDisplay, LeftTop)
+        return card
 
     def MoveACard(self,
                   x : int,

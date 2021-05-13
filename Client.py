@@ -323,105 +323,136 @@ class GameClient:
 						index : int
 						) -> None:
 		"""
-		Displays the piles Screen
+		Displays the piles Screen according to the index pile
 		"""
 
-		GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
-		GraySurf.fill((150,150,150,150))
-		self.game.DISPLAYSURF.blit(GraySurf, (0,0))
 
-
-		# PileBoxSize = (int(0.6*self.game.WINDOWWIDTH), int(self.game.HEIGHTCARD))
-		# PileBox = pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
-		# 	( x0, y0 , PileBoxSize[0] , PileBoxSize[1] ), 4)
-		
-
-		# create cursor surface and cursor:
-
-		SurfCursorSize = (int(0.4*self.game.WINDOWWIDTH), int(0.033*self.game.WINDOWHEIGHT))
-		SurfCursor = pygame.Surface(SurfCursorSize, pygame.SRCALPHA)   # per-pixel alpha
-		SurfCursor.fill((40,40,40,255))
-		x0SurfCursor = int(0.3*self.game.WINDOWWIDTH)
-		y0SurfCursor = int(((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2) + 1.5*self.game.HEIGHTCARD)
-		SurfCursorBlit = self.game.DISPLAYSURF.blit(SurfCursor, (x0SurfCursor,y0SurfCursor))
-
-		pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
-		( x0SurfCursor, y0SurfCursor , SurfCursorSize[0],SurfCursorSize[1] ), 4)
-
-		# initialise cursor
-
-		CursorPos = self.game.WINDOWWIDTH/2  # middle of cursor
-		CursorSize = (int(0.04*self.game.WINDOWWIDTH), int(0.033*self.game.WINDOWHEIGHT))
-
-		Cursor = pygame.Surface(CursorSize, pygame.SRCALPHA)   # per-pixel alpha
-		Cursor.fill((0,0,0,255))
-		CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2) + 1.5*self.game.HEIGHTCARD)))
-
-		CursorSelected = False
-
-		CursorPosMax = x0SurfCursor + SurfCursorSize[0] - CursorSize[0]/2
-		CursorPosMin = x0SurfCursor + CursorSize[0]/2
-
-		NotClickedOut = True		
 		DisplayedPile = self.game.Piles[self.mapping_play_card[(index,self.game.PlayerSelected)]]
 
+		Cards_to_Hide_gold = TheGame.CreateListOfCards([1,60],'Gold')
+		Cards_to_Hide_silver = TheGame.CreateListOfCards([1,60],'Silver')
+		Cards_to_Hide = Cards_to_Hide_silver + Cards_to_Hide_gold
 
-		NumberOfCards = len(DisplayedPile)
-		Ltot = self.game.WIDTHCARD * (NumberOfCards - 1) / 3 + self.game.WIDTHCARD 
+		DisplayedPile = [card for card in DisplayedPile if card not in Cards_to_Hide]
+		NumberOfCardsToDisplay = len(DisplayedPile)
 
-		x0 = int((self.game.WINDOWWIDTH - Ltot) /2 )  
-		y0 = int((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2)
 
-		# TODO : handle case where the pile is empty (just 1 card in it : division by 0 )
-		# TODO : fetch the active player before so that WidthSeenCard depends on the selected player 
-		#WidthSeenCard = (int(0.6*self.game.WINDOWWIDTH) - self.game.WIDTHCARD)/(NumberOfCards+1) # represent the width of a card displayed but not completely shown on a pile
-		WidthSeenCard = (1 / 3) * self.game.WIDTHCARD
+		if NumberOfCardsToDisplay > 0 :
 
-		while NotClickedOut:
-							
-			# i = round(NumberOfCards*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin))
-			j = 0
-			# for card in DisplayedPile:
-			# 	if j<i : # before the card i
-			# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
-			# 	elif j==i:
-			# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+(j-1)*WidthSeenCard +self.game.WIDTHCARD,y0])
-			# 	elif j>i:
-			# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
-			# 	j+=1
-			for card in DisplayedPile:
-				self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
-				j+=1
-										
-			for event in pygame.event.get():
-				if event.type == MOUSEBUTTONDOWN and event.button == 1 and not (SurfCursorBlit.collidepoint(self.mousex,self.mousey)): #or PileBox.collidepoint(self.mousex,self.mousey) or ):
-					NotClickedOut = False
-				elif event.type == MOUSEBUTTONDOWN and event.button == 1 and CursorBlit.collidepoint(self.mousex,self.mousey):
-					CursorSelected = True
-				elif event.type == MOUSEBUTTONUP and event.button == 1 and CursorSelected:
-					CursorSelected = False
-				elif event.type == MOUSEMOTION:
-					self.mousex, self.mousey = event.pos
+			GraySurf = pygame.Surface((self.game.WINDOWWIDTH, self.game.WINDOWHEIGHT), pygame.SRCALPHA)   # per-pixel alpha
+			GraySurf.fill((150,150,150,150))
+			self.game.DISPLAYSURF.blit(GraySurf, (0,0))
+
+
+			# PileBoxSize = (int(0.6*self.game.WINDOWWIDTH), int(self.game.HEIGHTCARD))
+			# PileBox = pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
+			# 	( x0, y0 , PileBoxSize[0] , PileBoxSize[1] ), 4)
 			
-			if CursorSelected:
-				CursorPos = self.mousex
 
-				# limit the cursor to the surfcursor
-				if CursorPos > CursorPosMax:
-					CursorPos = CursorPosMax
-				elif CursorPos < CursorPosMin:
-					CursorPos = CursorPosMin
+			# create cursor surface and cursor:
 
-			# display Cursor and CursorBar
+			SurfCursorSize = (int(0.4*self.game.WINDOWWIDTH), int(0.033*self.game.WINDOWHEIGHT))
+			SurfCursor = pygame.Surface(SurfCursorSize, pygame.SRCALPHA)   # per-pixel alpha
+			SurfCursor.fill((40,40,40,255))
+			x0SurfCursor = int(0.3*self.game.WINDOWWIDTH)
+			y0SurfCursor = int(((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2) + 1.5*self.game.HEIGHTCARD)
 			SurfCursorBlit = self.game.DISPLAYSURF.blit(SurfCursor, (x0SurfCursor,y0SurfCursor))
 
 			pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
 			( x0SurfCursor, y0SurfCursor , SurfCursorSize[0],SurfCursorSize[1] ), 4)
 
-			CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(y0 + 1.5*self.game.HEIGHTCARD)))
-			
-			pygame.display.update()
-			self.game.clock.tick(self.game.FPS) 
+			# initialise cursor
+
+			CursorPos = self.game.WINDOWWIDTH/2  # middle of cursor
+			CursorSize = (int(0.04*self.game.WINDOWWIDTH), int(0.033*self.game.WINDOWHEIGHT))
+
+			Cursor = pygame.Surface(CursorSize, pygame.SRCALPHA)   # per-pixel alpha
+			Cursor.fill((0,0,0,255))
+			CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2) + 1.5*self.game.HEIGHTCARD)))
+
+			CursorSelected = False
+
+			CursorPosMax = x0SurfCursor + SurfCursorSize[0] - CursorSize[0]/2
+			CursorPosMin = x0SurfCursor + CursorSize[0]/2
+
+			NotClickedOut = True		
+
+			NumberMaxOfCardsToDisplay = 6
+			Ltot = self.game.WIDTHCARD * (NumberOfCardsToDisplay - 1) / 3 + self.game.WIDTHCARD 
+
+			x0 = int((self.game.WINDOWWIDTH - Ltot) /2 )  
+			y0 = int((self.game.WINDOWHEIGHT-self.game.HEIGHTCARD)/2)
+
+			# xc = int(self.game.WIDTHCARD/2)
+			# yc = int(self.game.HEIGHTCARD/2)
+
+			# Max rotation
+			alpha_max = 15 
+
+			# TODO : handle case where the pile is empty (just 1 card in it : division by 0 )
+			# TODO : fetch the active player before so that WidthSeenCard depends on the selected player 
+			#WidthSeenCard = (int(0.6*self.game.WINDOWWIDTH) - self.game.WIDTHCARD)/(NumberOfCards+1) # represent the width of a card displayed but not completely shown on a pile
+			WidthSeenCard = (1 / 3) * self.game.WIDTHCARD
+
+			while NotClickedOut:
+								
+				# i = round(NumberOfCards*(CursorPos-CursorPosMin)/(CursorPosMax-CursorPosMin))
+				j = 0
+				# for card in DisplayedPile:
+				# 	if j<i : # before the card i
+				# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
+				# 	elif j==i:
+				# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+(j-1)*WidthSeenCard +self.game.WIDTHCARD,y0])
+				# 	elif j>i:
+				# 		self.game.DrawCardOnBoard(card,LeftTop=[x0+j*WidthSeenCard,y0])
+				# 	j+=1
+				if NumberOfCardsToDisplay <= NumberMaxOfCardsToDisplay :
+					alpha = (NumberOfCardsToDisplay/NumberMaxOfCardsToDisplay)*alpha_max
+					# Rot_alpha = np.array([[np.cos(alpha), -np.sin(alpha)],
+					# 					  [np.sin(alpha),  np.cos(alpha)]])
+					
+					# A = np.dot(Rot_alpha,np.array([[-xc],
+					# 								[-yc]]) )
+
+					# x_prime, y_prime = A[0][0], A[1][0]
+					# print(x_prime, y_prime)
+
+
+					RotationList = self.game.GenereteRotation(NumberOfCardsToDisplay, alpha)				
+
+					for count, card in enumerate(DisplayedPile):
+						self.game.DrawCardOnBoard(card, LeftTop=[x0 + count * WidthSeenCard, y0 ], rotation = RotationList[count])
+						j+=1
+											
+				for event in pygame.event.get():
+					if event.type == MOUSEBUTTONDOWN and event.button == 1 and not (SurfCursorBlit.collidepoint(self.mousex,self.mousey)): #or PileBox.collidepoint(self.mousex,self.mousey) or ):
+						NotClickedOut = False
+					elif event.type == MOUSEBUTTONDOWN and event.button == 1 and CursorBlit.collidepoint(self.mousex,self.mousey):
+						CursorSelected = True
+					elif event.type == MOUSEBUTTONUP and event.button == 1 and CursorSelected:
+						CursorSelected = False
+					elif event.type == MOUSEMOTION:
+						self.mousex, self.mousey = event.pos
+				
+				if CursorSelected:
+					CursorPos = self.mousex
+
+					# limit the cursor to the surfcursor
+					if CursorPos > CursorPosMax:
+						CursorPos = CursorPosMax
+					elif CursorPos < CursorPosMin:
+						CursorPos = CursorPosMin
+
+				# display Cursor and CursorBar
+				SurfCursorBlit = self.game.DISPLAYSURF.blit(SurfCursor, (x0SurfCursor,y0SurfCursor))
+
+				pygame.draw.rect(self.game.DISPLAYSURF, self.game.ColorsCodes["Gray"],
+				( x0SurfCursor, y0SurfCursor , SurfCursorSize[0],SurfCursorSize[1] ), 4)
+
+				CursorBlit = self.game.DISPLAYSURF.blit(Cursor, (int(CursorPos-CursorSize[0]/2),int(y0 + 1.5*self.game.HEIGHTCARD)))
+				
+				pygame.display.update()
+				self.game.clock.tick(self.game.FPS) 
 
 
 	def run(self
