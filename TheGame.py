@@ -1,6 +1,7 @@
 import os
 import copy
 import numpy as np
+from numpy.core.defchararray import center
 import pygame
 
 def CreateListOfCards(ListOfNumbers: list,
@@ -760,7 +761,7 @@ class GameFrontEnd(Game):
             print('The objectCard is not a str or a card ! type : {}'.format(type(objectCard)))
             return None
 
-    def GenereteRotation(self,
+    def GenerateRotation(self,
                          NumberOfCardsToDisplay : int,
                          alpha : float
                          ) -> list :
@@ -801,6 +802,100 @@ class GameFrontEnd(Game):
         rect.center = CardCenter
         card = self.DISPLAYSURF.blit(CardToDisplay, LeftTop)
         return card
+
+    def DrawCardOnBoard2(self,
+                        objectCard,
+                        CardCenter : list,
+                        rotation : float = 0
+                        ):
+
+        """
+        objectCard can be a card or a str
+        """
+        """
+        # TODO find how to return the correct type (and write it after the ) -> : )
+        centerx, centery = CardCenter
+        CardToDisplay = self.Images[self.CardToImageStr(objectCard)]
+        # x2 = centerx+(x-centerx)*np.cos(rotation)+(y-centery)*np.sin(rotation)
+        # y2 = centery-(x-centerx)*np.sin(rotation)+(y-centery)*np.cos(rotation)
+
+        # LeftTop = (int(centerx - self.WIDTHCARD/2), int(centery - self.HEIGHTCARD/2))
+        RightTopx, RightTopy  = (int( self.WIDTHCARD/2), int(- self.HEIGHTCARD/2))
+        print("before rotation",RightTopx, RightTopy)
+        rotationRad = (-rotation)*np.pi/180
+        LeftTopx = RightTopx*np.cos(rotationRad) - RightTopy*np.sin(rotationRad) + centerx - self.WIDTHCARD*np.cos(rotationRad)
+        LeftTopy = RightTopx*np.sin(rotationRad) + RightTopy*np.cos(rotationRad) + centery
+        LeftTop = (LeftTopx,LeftTopy)
+        print("after rotation",LeftTopx,LeftTopy)
+        print("\n")
+
+        CardToDisplay = pygame.transform.rotate(CardToDisplay, rotation)
+        print(CardToDisplay)
+        rect = CardToDisplay.get_rect()
+        print(rect)
+        # rect.center = CardCenter
+        # pygame.draw.rect(self.DISPLAYSURF,self.ColorsCodes["Orange"],rect)
+        card = self.DISPLAYSURF.blit(CardToDisplay, LeftTop)
+        return card
+        """
+                # calcaulate the axis aligned bounding box of the rotated image
+        CardToDisplay = self.Images[self.CardToImageStr(objectCard)]
+        w, h       = CardToDisplay.get_size()
+        box        = [pygame.math.Vector2(p) for p in [(0, 0), (w, 0), (w, -h), (0, -h)]]
+        box_rotate = [p.rotate(rotation) for p in box]
+        min_box    = (min(box_rotate, key=lambda p: p[0])[0], min(box_rotate, key=lambda p: p[1])[1])
+        max_box    = (max(box_rotate, key=lambda p: p[0])[0], max(box_rotate, key=lambda p: p[1])[1])
+
+        # calculate the translation of the pivot 
+        originPos = (w/2, h/2)
+        pivot        = pygame.math.Vector2(originPos[0], -originPos[1])
+        pivot_rotate = pivot.rotate(rotation)
+        pivot_move   = pivot_rotate - pivot
+
+        # calculate the upper left origin of the rotated image
+        origin = (CardCenter[0] - originPos[0] + min_box[0] - pivot_move[0], CardCenter[1] - originPos[1] - max_box[1] + pivot_move[1])
+
+        # get a rotated image
+        rotated_image = pygame.transform.rotate(CardToDisplay, rotation)
+
+        # rotate and blit the image
+        card = self.DISPLAYSURF.blit(rotated_image, origin)
+        return card
+
+    def linear_func(a : float,
+                    b : float,
+                    x : float
+                    ) -> float :
+
+        return a*x + b
+
+    def quadratic_func(a : float,
+                        b : float,
+                        c : float,
+                        x : float
+                        ) -> float :
+                        
+        return -(x-a)*(x-b) + c
+
+    def quadratic_sol(a : float,
+                        b : float,
+                        c : float,
+                        pos : bool
+                        ) -> float :
+
+        d = b**2-4*a*c # discriminant
+
+        # if d < 0:
+        #     print ("This equation has no real solution")
+        # elif d == 0:
+        #     x = (-b+np.sqrt(b**2-4*a*c))/2*a
+        #     print ("This equation has one solutions: "), x
+        # else:
+        if pos :
+            return (-b+np.sqrt(d))/(2*a)
+        else :
+            return (-b-np.sqrt(d))/(2*a)
+
 
     def MoveACard(self,
                   x : int,
